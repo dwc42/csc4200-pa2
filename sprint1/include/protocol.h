@@ -36,9 +36,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <io.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
 #include <arpa/inet.h>
@@ -58,10 +60,22 @@ typedef struct PacketHeader
 	uint32_t payloadLength : 32;
 } PacketHeader;
 #define HEADER_SIZE 4 * sizeof(uint32_t)
+#define TIMEOUT_SEC 5L
+#define TIMEOUT_USEC 0L
 
+#define REMOTE_SERVER_IP "10.128.0.3"
+#define REMOTE_SERVER_PORT 5000
+#define BACKLOG_SIZE 5
+#define MAX_RETRIES 5
 typedef struct Packet
 {
 	PacketHeader header;
 	char *payload;
 } Packet;
+
+Packet make_packet();
+char *packet_serialize(Packet packet);
+Packet packet_deserialize(char *serializedPacket);
+
+void printPacket(Packet packet);
 #endif // PROTOCOL_H_

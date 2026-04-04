@@ -33,7 +33,7 @@
 Packet make_packet()
 {
 	Packet packet;
-	memset(&packet.header, 0, HEADER_SIZE);
+	memset(&packet.header, 0, sizeof(Packet));
 	return packet;
 }
 char *packet_serialize(Packet packet)
@@ -104,26 +104,26 @@ void printPacket(Packet packet)
 	printf(")\n");
 }
 
-int main()
-{
+// int main()
+// {
 
-	Packet packet = make_packet();
-	packet.payload = "Test Message";
-	packet.header.acknowledgmentNumber = 389983;
-	packet.header.sequenceNumber = 389983;
-	packet.header.acknowledgmentValid = 1;
-	packet.header.synchronizeSequence = 1;
-	packet.header.noMoreData = 1;
-	packet.header.payloadLength = strlen(packet.payload);
-	printf("\n\nPacket Start: \n");
-	printPacket(packet);
-	char *serializedPacket = packet_serialize(packet);
-	printf("%s\n", serializedPacket);
-	Packet packet2 = packet_deserialize(serializedPacket);
-	printf("\n\nPacket Back: \n");
-	printPacket(packet2);
+// 	Packet packet = make_packet();
+// 	packet.payload = "Test Message";
+// 	packet.header.acknowledgmentNumber = 389983;
+// 	packet.header.sequenceNumber = 389983;
+// 	packet.header.acknowledgmentValid = 1;
+// 	packet.header.synchronizeSequence = 1;
+// 	packet.header.noMoreData = 1;
+// 	packet.header.payloadLength = strlen(packet.payload);
+// 	printf("\n\nPacket Start: \n");
+// 	printPacket(packet);
+// 	char *serializedPacket = packet_serialize(packet);
+// 	printf("%s\n", serializedPacket);
+// 	Packet packet2 = packet_deserialize(serializedPacket);
+// 	printf("\n\nPacket Back: \n");
+// 	printPacket(packet2);
 
-	free(serializedPacket);
-	free(packet.payload);
-	free(packet2.payload);
-}
+// 	free(serializedPacket);
+// 	free(packet.payload);
+// 	free(packet2.payload);
+// }
