@@ -35,8 +35,7 @@ int main()
 	printf("Server listening on port %d...\n", REMOTE_SERVER_PORT);
 	while (1)
 	{
-		client_socket = accept(server_socket, (struct sockaddr *)&client_addr,
-							   &client_addr_len);
+		client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len);
 		if (client_socket < 0)
 		{
 			close(client_socket);
@@ -44,7 +43,7 @@ int main()
 		}
 		char *bufferClientRawPacketSYN;
 		bufferClientRawPacketSYN = malloc(HEADER_SIZE);
-		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, &client_addr, &client_addr_len) < 0)
+		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 		{
 			close(client_socket);
 			perror("receive syc failed");
@@ -76,12 +75,12 @@ int main()
 		Packet clientPacketACK;
 		do
 		{
-			if (sendto(client_socket, serializedPacketSYN, strlen(serializedPacketSYN), 0, &client_addr, &client_addr_len) < 0)
+			if (sendto(client_socket, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 			{
 				perror("send SYN failed");
 				close(client_socket);
 			};
-			if (recvfrom(client_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, &client_addr, &client_addr_len) < 0)
+			if (recvfrom(client_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 			{
 				perror("timeout or recv failed, retransmit?");
 				continue;

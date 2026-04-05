@@ -62,14 +62,14 @@ int main()
 	Packet serverPacketSYN;
 	do
 	{
-		if (sendto(socket_client, serializedPacketSYN, strlen(serializedPacketSYN), 0, &server_addr, &server_addr_len) < 0)
+		if (sendto(socket_client, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
 		{
 			close(socket_client);
 			perror("SYN failed");
 			exit(EXIT_FAILURE);
 		}
 		printf("sent cient SYN");
-		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, &server_addr, &server_addr_len) < 0)
+		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
 		{
 			perror("timeout or recv failed, retransmit?");
 			continue;
@@ -100,7 +100,7 @@ int main()
 	packetSYN.header.acknowledgmentValid = 1;
 	packetSYN.header.payloadLength = 0;
 	char *serializedPacketACK = packet_serialize(packetACK);
-	if (sendto(socket_client, serializedPacketACK, strlen(serializedPacketACK), 0, &server_addr, &server_addr_len) < 0)
+	if (sendto(socket_client, serializedPacketACK, strlen(serializedPacketACK), 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
 	{
 		close(socket_client);
 		perror("ACK failed");
