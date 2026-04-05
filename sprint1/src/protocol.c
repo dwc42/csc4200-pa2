@@ -79,10 +79,10 @@ Packet packet_deserialize(char *serializedPacket)
 	memcpy(&bufferInt, serializedPacket + sizeof(uint32_t) * i++, sizeof(uint32_t));
 	bufferInt = ntohl(bufferInt);
 	uint8_t offset = 3;
-	packet.header.unused = bufferInt >> (offset--);
-	packet.header.acknowledgmentValid = bufferInt >> (offset--) & 0x1u;
-	packet.header.synchronizeSequence = bufferInt >> (offset--) & 0x1u;
-	packet.header.noMoreData = bufferInt >> (offset--) & 0x1u;
+	packet.header.unused = bufferInt >> 3;
+	packet.header.acknowledgmentValid = bufferInt >> 2 & 0x1u;
+	packet.header.synchronizeSequence = bufferInt >> 1 & 0x1u;
+	packet.header.noMoreData = bufferInt & 0x1u;
 	memcpy(&bufferInt, serializedPacket + sizeof(uint32_t) * i++, sizeof(uint32_t));
 	packet.header.payloadLength = ntohl(bufferInt);
 
