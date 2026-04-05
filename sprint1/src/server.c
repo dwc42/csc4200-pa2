@@ -11,10 +11,9 @@
  */
 int main()
 {
-	int server_socket, client_socket;
+	int server_socket;
 	struct sockaddr_in server_addr;
-	struct sockaddr_in client_addr;
-	socklen_t client_addr_len = sizeof(client_addr);
+
 	// 1. create local socket
 	server_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (server_socket < 0)
@@ -35,17 +34,13 @@ int main()
 	printf("Server listening on port %d...\n", REMOTE_SERVER_PORT);
 	while (1)
 	{
-		client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len);
-		if (client_socket < 0)
-		{
-			close(client_socket);
-			perror("accept failed");
-		}
+		struct sockaddr_in client_addr;
+		socklen_t client_addr_len = sizeof(client_addr);
 		char *bufferClientRawPacketSYN;
 		bufferClientRawPacketSYN = malloc(HEADER_SIZE);
 		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 		{
-			close(client_socket);
+
 			perror("receive syc failed");
 		}
 		Packet clientPacketSYN = packet_deserialize(bufferClientRawPacketSYN);
@@ -53,7 +48,7 @@ int main()
 		uint32_t initialSequenceNumber = rand();
 		if (!clientPacketSYN.header.synchronizeSequence)
 		{
-			close(client_socket);
+
 			perror("packet.header.synchronizeSequence not 1");
 		}
 		Packet packetSYN = make_packet();
@@ -63,48 +58,47 @@ int main()
 		packetSYN.header.acknowledgmentValid = 1;
 		packetSYN.header.payloadLength = 0;
 		char *serializedPacketSYN = packet_serialize(packetSYN);
-		struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
-		if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
-		{
-			perror("setsockopt failed");
-			close(client_socket);
-		}
+
 		uint32_t retries = 0;
-		char *bufferClientRawPacketACK;
-		bufferClientRawPacketACK = malloc(HEADER_SIZE);
 		Packet clientPacketACK;
+		char *bufferClientRawPacketACK[HEADER_SIZE];
 		do
 		{
-			if (sendto(client_socket, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
+			if (sendto(server_socket, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 			{
 				perror("send SYN failed");
-				close(client_socket);
 			};
-			if (recvfrom(client_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
+			struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
+			if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+			{
+				perror("setsockopt failed");
+				continue;
+			}
+			if (recvfrom(server_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 			{
 				perror("timeout or recv failed, retransmit?");
 				continue;
 			}
 			clientPacketACK = packet_deserialize(bufferClientRawPacketACK);
 
-			if (!clientPacketACK.header.acknowledgmentValid)
+			if (!clientPacketACK.header.acknowledgmentValid || clientPacketACK.header.synchronizeSequence)
 			{
-				perror("sequenceNumber and acknowledgmentValid flags both not 1, retransmit?");
+				perror("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?");
 				continue;
 			}
 			if (clientPacketACK.header.acknowledgmentNumber != (initialSequenceNumber + 1))
 			{
-				perror("sequenceNumber and acknowledgmentValid flags both not 1, retransmit?");
+				perror("acknowledgmentNumber != initialSequenceNumber+1, retransmit?");
 				continue;
 			}
 			printf("recv Client ACK");
 			break;
-		} while (++retries < MAX_RETRIES);
+		} while (++retries <= MAX_RETRIES);
 		if (retries > MAX_RETRIES)
 		{
 			perror("MAX_RETRIES, closed connection");
-			close(client_socket);
-			exit(EXIT_FAILURE);
+			// exit(EXIT_FAILURE);
+			continue;
 		}
 		printf("Handshake complete.");
 	}

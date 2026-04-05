@@ -13,7 +13,7 @@
 int main()
 {
 	struct sockaddr_in server_addr;
-	struct sockaddr_in local_addr;
+	// struct sockaddr_in local_addr;
 	socklen_t server_addr_len = sizeof(server_addr);
 
 	int socket_client = socket(AF_INET, SOCK_DGRAM, 0);
@@ -25,7 +25,7 @@ int main()
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(REMOTE_SERVER_PORT);
-	if (inet_pton(AF_INET, REMOTE_SERVER_IP, &server_addr.sin_addr) < 0)
+	if (inet_pton(AF_INET, REMOTE_SERVER_IP, &server_addr.sin_addr) <= 0)
 	{
 		perror("server dest ip set failed");
 		exit(EXIT_FAILURE);
@@ -55,9 +55,8 @@ int main()
 	packetSYN.header.payloadLength = 0;
 	char *serializedPacketSYN = packet_serialize(packetSYN);
 
-	char *bufferRawServerPacketSYN;
-	bufferRawServerPacketSYN = malloc(HEADER_SIZE);
-	int result;
+	char *bufferRawServerPacketSYN[HEADER_SIZE];
+
 	uint32_t retries = 0;
 	Packet serverPacketSYN;
 	do
@@ -77,28 +76,28 @@ int main()
 		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
 		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
 		{
-			perror("sequenceNumber and acknowledgmentValid flags both not 1, retransmit?");
+			perror("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?");
 			continue;
 		}
 		if (serverPacketSYN.header.acknowledgmentNumber != (initialSequenceNumber + 1))
 		{
-			perror("sequenceNumber and acknowledgmentValid flags both not 1, retransmit?");
+			perror("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?");
 			continue;
 		}
 		printf("recv Server SYN");
 		break;
-	} while (++retries <= MAX_RETRIES);
-	if (retries > MAX_RETRIES)
+	} while (++retries < MAX_RETRIES);
+	if (retries >= MAX_RETRIES)
 	{
 		perror("MAX_RETRIES, closed connection");
 		close(socket_client);
 		exit(EXIT_FAILURE);
 	}
 	Packet packetACK = make_packet();
-	packetSYN.header.sequenceNumber = initialSequenceNumber + 1;
-	packetSYN.header.acknowledgmentNumber = serverPacketSYN.header.synchronizeSequence + 1;
-	packetSYN.header.acknowledgmentValid = 1;
-	packetSYN.header.payloadLength = 0;
+	packetACK.header.sequenceNumber = initialSequenceNumber + 1;
+	packetACK.header.acknowledgmentNumber = serverPacketSYN.header.sequenceNumber + 1;
+	packetACK.header.acknowledgmentValid = 1;
+	packetACK.header.payloadLength = 0;
 	char *serializedPacketACK = packet_serialize(packetACK);
 	if (sendto(socket_client, serializedPacketACK, strlen(serializedPacketACK), 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
 	{
