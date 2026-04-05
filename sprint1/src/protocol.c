@@ -33,7 +33,13 @@
 Packet make_packet()
 {
 	Packet packet;
-	memset(&packet.header, 0, sizeof(Packet));
+	packet.header.acknowledgmentNumber = 0;
+	packet.header.acknowledgmentValid = 0;
+	packet.header.noMoreData = 0;
+	packet.header.payloadLength = 0;
+	packet.header.sequenceNumber = 0;
+	packet.header.synchronizeSequence = 0;
+	packet.header.unused = 0;
 	return packet;
 }
 char *packet_serialize(Packet packet)
@@ -73,10 +79,10 @@ Packet packet_deserialize(char *serializedPacket)
 	memcpy(&bufferInt, serializedPacket + sizeof(uint32_t) * i++, sizeof(uint32_t));
 	bufferInt = ntohl(bufferInt);
 	uint8_t offset = 3;
-	packet.header.unused = bufferInt >> (--offset);
-	packet.header.acknowledgmentValid = bufferInt >> (--offset) & 0x1u;
-	packet.header.synchronizeSequence = bufferInt >> (--offset) & 0x1u;
-	packet.header.noMoreData = bufferInt >> (--offset) & 0x1u;
+	packet.header.unused = bufferInt >> (offset--);
+	packet.header.acknowledgmentValid = bufferInt >> (offset--) & 0x1u;
+	packet.header.synchronizeSequence = bufferInt >> (offset--) & 0x1u;
+	packet.header.noMoreData = bufferInt >> (offset--) & 0x1u;
 	memcpy(&bufferInt, serializedPacket + sizeof(uint32_t) * i++, sizeof(uint32_t));
 	packet.header.payloadLength = ntohl(bufferInt);
 
