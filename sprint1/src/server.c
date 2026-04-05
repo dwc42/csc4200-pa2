@@ -34,13 +34,19 @@ int main()
 	printf("Server listening on port %d...\n", REMOTE_SERVER_PORT);
 	while (1)
 	{
+		// resets timeout to 0
+		struct timeval blocking_timeout = {0, 0};
+		if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &blocking_timeout, sizeof(blocking_timeout)) < 0)
+		{
+			perror("setsockopt failed");
+		}
 		struct sockaddr_in client_addr;
 		socklen_t client_addr_len = sizeof(client_addr);
 		char bufferClientRawPacketSYN[HEADER_SIZE];
 		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 		{
-
 			perror("receive syc failed");
+			continue;
 		}
 		Packet clientPacketSYN = packet_deserialize(bufferClientRawPacketSYN);
 		srand((unsigned)time(NULL) ^ getpid());
