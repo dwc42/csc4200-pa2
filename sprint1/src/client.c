@@ -48,7 +48,7 @@ int main()
 	// ISN
 	srand((unsigned)time(NULL) ^ getpid());
 	uint32_t initialSequenceNumber = rand();
-	printf("ISN: %d", initialSequenceNumber);
+	printf("ISN: %d\n", initialSequenceNumber);
 	packetSYN.header.sequenceNumber = initialSequenceNumber;
 	packetSYN.header.acknowledgmentNumber = 0;
 	packetSYN.header.synchronizeSequence = 1;
@@ -67,7 +67,7 @@ int main()
 			perror("SYN failed");
 			exit(EXIT_FAILURE);
 		}
-		printf("sent cient SYN");
+		printf("sent cient SYN\n");
 		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
 		{
 			printf("timeout or recv failed, retransmit?\n");

@@ -60,10 +60,10 @@ char *packet_serialize(Packet packet)
 	memcpy(serializedPacket + sizeof(uint32_t) * i++, &bufferNetworkInt, sizeof(uint32_t));
 	bufferNetworkInt = htonl(packet.header.payloadLength);
 	memcpy(serializedPacket + sizeof(uint32_t) * i++, &bufferNetworkInt, sizeof(uint32_t));
-	printf("finished packet_serialize of header");
+	// printf("finished packet_serialize of header\n");
 	memcpy(serializedPacket + HEADER_SIZE, packet.payload, packet.header.payloadLength);
 	serializedPacket[HEADER_SIZE + packet.header.payloadLength] = '\0';
-	printf("finished packet_serialize");
+	// printf("finished packet_serialize");
 	return serializedPacket;
 }
 Packet packet_deserialize(char *serializedPacket)
