@@ -60,7 +60,7 @@ int main()
 
 		uint32_t retries = 0;
 		Packet clientPacketACK;
-		char *bufferClientRawPacketACK[HEADER_SIZE];
+		char bufferClientRawPacketACK[HEADER_SIZE];
 		do
 		{
 			if (sendto(server_socket, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
