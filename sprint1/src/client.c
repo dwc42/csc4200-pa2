@@ -16,7 +16,7 @@ int main()
 	struct sockaddr_in local_addr;
 	socklen_t server_addr_len = sizeof(server_addr);
 
-	SOCKET socket_client = socket(AF_INET, SOCK_DGRAM, 0);
+	int socket_client = socket(AF_INET, SOCK_DGRAM, 0);
 	if (socket_client < 0)
 	{
 		perror("socket creation failed");
