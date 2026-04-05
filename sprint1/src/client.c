@@ -70,21 +70,21 @@ int main()
 		printf("sent cient SYN");
 		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
 		{
-			printf("timeout or recv failed, retransmit?");
+			printf("timeout or recv failed, retransmit?\n");
 			continue;
 		}
 		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
 		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
 		{
-			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?");
+			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?\n");
 			continue;
 		}
 		if (serverPacketSYN.header.acknowledgmentNumber != (initialSequenceNumber + 1))
 		{
-			printf("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?");
+			printf("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?\n");
 			continue;
 		}
-		printf("recv Server SYN");
+		printf("recv Server SYN\n");
 		break;
 	} while (++retries < MAX_RETRIES);
 	if (retries >= MAX_RETRIES)
@@ -105,6 +105,6 @@ int main()
 		perror("ACK failed");
 		exit(EXIT_FAILURE);
 	}
-	printf("Handshake complete.");
+	printf("Handshake complete.\n");
 	close(socket_client);
 }

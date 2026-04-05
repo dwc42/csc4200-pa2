@@ -82,15 +82,15 @@ int main()
 
 			if (!clientPacketACK.header.acknowledgmentValid || clientPacketACK.header.synchronizeSequence)
 			{
-				printf("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?");
+				printf("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?\n");
 				continue;
 			}
 			if (clientPacketACK.header.acknowledgmentNumber != (initialSequenceNumber + 1))
 			{
-				printf("acknowledgmentNumber != initialSequenceNumber+1, retransmit?");
+				printf("acknowledgmentNumber != initialSequenceNumber+1, retransmit?\n");
 				continue;
 			}
-			printf("recv Client ACK");
+			printf("recv Client ACK\n");
 			break;
 		} while (++retries < MAX_RETRIES);
 		if (retries >= MAX_RETRIES)
@@ -99,6 +99,6 @@ int main()
 			// exit(EXIT_FAILURE);
 			continue;
 		}
-		printf("Handshake complete.");
+		printf("Handshake complete.\n");
 	}
 }
