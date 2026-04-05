@@ -63,7 +63,7 @@ int main()
 		char bufferClientRawPacketACK[HEADER_SIZE];
 		do
 		{
-			if (sendto(server_socket, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
+			if (sendto(server_socket, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 			{
 				perror("send SYN failed");
 			};
@@ -82,12 +82,12 @@ int main()
 
 			if (!clientPacketACK.header.acknowledgmentValid || clientPacketACK.header.synchronizeSequence)
 			{
-				perror("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?");
+				printf("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?");
 				continue;
 			}
 			if (clientPacketACK.header.acknowledgmentNumber != (initialSequenceNumber + 1))
 			{
-				perror("acknowledgmentNumber != initialSequenceNumber+1, retransmit?");
+				printf("acknowledgmentNumber != initialSequenceNumber+1, retransmit?");
 				continue;
 			}
 			printf("recv Client ACK");

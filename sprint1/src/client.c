@@ -61,7 +61,7 @@ int main()
 	Packet serverPacketSYN;
 	do
 	{
-		if (sendto(socket_client, serializedPacketSYN, strlen(serializedPacketSYN), 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
+		if (sendto(socket_client, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
 		{
 			close(socket_client);
 			perror("SYN failed");
@@ -70,18 +70,18 @@ int main()
 		printf("sent cient SYN");
 		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
 		{
-			perror("timeout or recv failed, retransmit?");
+			printf("timeout or recv failed, retransmit?");
 			continue;
 		}
 		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
 		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
 		{
-			perror("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?");
+			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?");
 			continue;
 		}
 		if (serverPacketSYN.header.acknowledgmentNumber != (initialSequenceNumber + 1))
 		{
-			perror("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?");
+			printf("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?");
 			continue;
 		}
 		printf("recv Server SYN");
@@ -99,7 +99,7 @@ int main()
 	packetACK.header.acknowledgmentValid = 1;
 	packetACK.header.payloadLength = 0;
 	char *serializedPacketACK = packet_serialize(packetACK);
-	if (sendto(socket_client, serializedPacketACK, strlen(serializedPacketACK), 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
+	if (sendto(socket_client, serializedPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
 	{
 		close(socket_client);
 		perror("ACK failed");

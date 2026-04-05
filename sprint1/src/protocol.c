@@ -78,7 +78,6 @@ Packet packet_deserialize(char *serializedPacket)
 	packet.header.acknowledgmentNumber = ntohl(bufferInt);
 	memcpy(&bufferInt, serializedPacket + sizeof(uint32_t) * i++, sizeof(uint32_t));
 	bufferInt = ntohl(bufferInt);
-	uint8_t offset = 3;
 	packet.header.unused = bufferInt >> 3;
 	packet.header.acknowledgmentValid = bufferInt >> 2 & 0x1u;
 	packet.header.synchronizeSequence = bufferInt >> 1 & 0x1u;
