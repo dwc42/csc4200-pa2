@@ -36,8 +36,7 @@ int main()
 	{
 		struct sockaddr_in client_addr;
 		socklen_t client_addr_len = sizeof(client_addr);
-		char *bufferClientRawPacketSYN;
-		bufferClientRawPacketSYN = malloc(HEADER_SIZE);
+		char bufferClientRawPacketSYN[HEADER_SIZE];
 		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 		{
 
@@ -93,8 +92,8 @@ int main()
 			}
 			printf("recv Client ACK");
 			break;
-		} while (++retries <= MAX_RETRIES);
-		if (retries > MAX_RETRIES)
+		} while (++retries < MAX_RETRIES);
+		if (retries >= MAX_RETRIES)
 		{
 			perror("MAX_RETRIES, closed connection");
 			// exit(EXIT_FAILURE);

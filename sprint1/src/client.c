@@ -55,7 +55,7 @@ int main()
 	packetSYN.header.payloadLength = 0;
 	char *serializedPacketSYN = packet_serialize(packetSYN);
 
-	char *bufferRawServerPacketSYN[HEADER_SIZE];
+	char bufferRawServerPacketSYN[HEADER_SIZE];
 
 	uint32_t retries = 0;
 	Packet serverPacketSYN;
