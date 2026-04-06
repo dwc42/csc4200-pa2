@@ -49,7 +49,7 @@ function copyRecursiveSync(src, dest, excludeCallback, deleteDest = false) {
 	copyRecursiveSyncInternal(src, srcFolderNameWithDest);
 };
 
-const code_paths = [path.resolve("./sprint1")/*, path.resolve("./sprint2"), path.resolve("./sprint3")*/];
+const code_paths = [path.resolve("./sprint1"), path.resolve("./sprint2")/*, path.resolve("./sprint3")*/];
 const code_dest = path.resolve("../infrastructure-setup-dwc42/assignment-2-tcp-over-udp/");
 code_paths.forEach(code_path => {
 	console.log(code_dest, code_path);
