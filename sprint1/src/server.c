@@ -26,7 +26,6 @@ ServerConfig parseServerArgs(int argc, char *argv[])
 typedef void OnConnectionCallback(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, struct sockaddr_in *client_addr);
 bool startListening(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, OnConnectionCallback callback)
 {
-	struct sockaddr_in *client_addr;
 	if (server_socket < 0)
 	{
 		perror("socket creation failed");
@@ -45,6 +44,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 	printf("Server listening on port %d...\n", serverConfig.port);
 	while (1)
 	{
+		struct sockaddr_in *client_addr;
 		// resets timeout to 0
 		struct timeval blocking_timeout = {0, 0};
 		if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &blocking_timeout, sizeof(blocking_timeout)) < 0)
