@@ -164,5 +164,6 @@ int main(int argc, char *argv[])
 	}
 	log_packet(packetACK, clientConfig.logfilePath, Send);
 	printf("Handshake complete.\n");
+
 	close(socket_client);
 }
