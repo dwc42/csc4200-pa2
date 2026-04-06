@@ -21,6 +21,7 @@ ServerConfig parseServerArgs(int argc, char *argv[])
 			serverConfig.logfilePath = argv[++i];
 		}
 	}
+	return serverConfig;
 }
 /**
  * 1. Create a UDP socket, bind to port.

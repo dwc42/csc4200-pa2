@@ -32,6 +32,7 @@ ClientConfig parseClientArgs(int argc, char *argv[])
 			clientConfig.filePath = argv[++i];
 		}
 	}
+	return clientConfig;
 }
 /**
  * 1. Create a UDP socket with `socket(AF_INET, SOCK_DGRAM, 0)`.
