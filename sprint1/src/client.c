@@ -38,7 +38,7 @@ ClientConfig parseClientArgs(int argc, char *argv[])
 bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr)
 {
 
-	memset(server_addr, 0, sizeof(server_addr));
+	memset(server_addr, 0, sizeof(struct sockaddr_in));
 	server_addr->sin_family = AF_INET;
 	server_addr->sin_port = htons(clientConfig.port);
 	socklen_t server_addr_len = sizeof(struct sockaddr_in);
