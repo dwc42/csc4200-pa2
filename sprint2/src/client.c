@@ -34,6 +34,99 @@ ClientConfig parseClientArgs(int argc, char *argv[])
 	}
 	return clientConfig;
 }
+
+bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr)
+{
+
+	memset(server_addr, 0, sizeof(struct sockaddr_in));
+	server_addr->sin_family = AF_INET;
+	server_addr->sin_port = htons(clientConfig.port);
+	socklen_t server_addr_len = sizeof(struct sockaddr_in);
+	if (inet_pton(AF_INET, clientConfig.serverIp, &server_addr->sin_addr) <= 0)
+	{
+		perror("server dest ip set failed");
+		return false;
+	}
+	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
+	if (setsockopt(socket_client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+	{
+		perror("setsockopt failed");
+		return false;
+	}
+
+	if (connect(socket_client, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in)) < 0)
+	{
+		perror("connection failed");
+		return false;
+	}
+	printf("Success: Connected to server at %s:%d\n", clientConfig.serverIp, clientConfig.port);
+
+	Packet packetSYN = make_packet();
+	// ISN
+	srand((unsigned)time(NULL) ^ getpid());
+	uint32_t initialSequenceNumber = rand();
+	printf("ISN: %d\n", initialSequenceNumber);
+	packetSYN.header.sequenceNumber = initialSequenceNumber;
+	packetSYN.header.acknowledgmentNumber = 0;
+	packetSYN.header.synchronizeSequence = 1;
+	packetSYN.header.payloadLength = 0;
+	char *serializedPacketSYN = packet_serialize(packetSYN);
+
+	char bufferRawServerPacketSYN[HEADER_SIZE];
+
+	uint32_t retries = 0;
+	Packet serverPacketSYN;
+	do
+	{
+		if (sendto(socket_client, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)server_addr, server_addr_len) < 0)
+		{
+			close(socket_client);
+			perror("SYN failed");
+			continue;
+		}
+		log_packet(packetSYN, clientConfig.logfilePath, Send);
+		printf("sent cient SYN\n");
+		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)server_addr, &server_addr_len) < 0)
+		{
+			printf("timeout or recv failed, retransmit?\n");
+			continue;
+		}
+		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
+		log_packet(serverPacketSYN, clientConfig.logfilePath, Receive);
+		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
+		{
+			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?\n");
+			continue;
+		}
+		if (serverPacketSYN.header.acknowledgmentNumber != (initialSequenceNumber + 1))
+		{
+			printf("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?\n");
+			continue;
+		}
+		printf("recv Server SYN\n");
+		break;
+	} while (++retries < MAX_RETRIES);
+	if (retries >= MAX_RETRIES)
+	{
+		perror("MAX_RETRIES, closed connection");
+		close(socket_client);
+		return false;
+	}
+	Packet packetACK = make_packet();
+	packetACK.header.sequenceNumber = initialSequenceNumber + 1;
+	packetACK.header.acknowledgmentNumber = serverPacketSYN.header.sequenceNumber + 1;
+	packetACK.header.acknowledgmentValid = 1;
+	packetACK.header.payloadLength = 0;
+	char *serializedPacketACK = packet_serialize(packetACK);
+	if (sendto(socket_client, serializedPacketACK, HEADER_SIZE, 0, (struct sockaddr *)server_addr, server_addr_len) < 0)
+	{
+		close(socket_client);
+		perror("ACK failed");
+		return false;
+	}
+	log_packet(packetACK, clientConfig.logfilePath, Send);
+	return true;
+}
 /**
  * 1. Create a UDP socket with `socket(AF_INET, SOCK_DGRAM, 0)`.
 2. Set `SO_RCVTIMEO` to `{TIMEOUT_SEC, TIMEOUT_USEC}`.
@@ -70,100 +163,18 @@ int main(int argc, char *argv[])
 
 	struct sockaddr_in server_addr;
 	// struct sockaddr_in local_addr;
-	socklen_t server_addr_len = sizeof(server_addr);
+
 	int socket_client = socket(AF_INET, SOCK_DGRAM, 0);
 	if (socket_client < 0)
 	{
 		perror("socket creation failed");
 		exit(EXIT_FAILURE);
 	}
-	memset(&server_addr, 0, sizeof(server_addr));
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(clientConfig.port);
-	if (inet_pton(AF_INET, clientConfig.serverIp, &server_addr.sin_addr) <= 0)
+	if (!createConnection(socket_client, clientConfig, &server_addr))
 	{
-		perror("server dest ip set failed");
+		printf("Handshake failed.\n");
 		exit(EXIT_FAILURE);
-	}
-	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
-	if (setsockopt(socket_client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
-	{
-		perror("setsockopt failed");
-		exit(EXIT_FAILURE);
-	}
-
-	if (connect(socket_client, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-	{
-		perror("connection failed");
-		exit(EXIT_FAILURE);
-	}
-	printf("Success: Connected to server at %s:%d\n", clientConfig.serverIp, clientConfig.port);
-
-	Packet packetSYN = make_packet();
-	// ISN
-	srand((unsigned)time(NULL) ^ getpid());
-	uint32_t initialSequenceNumber = rand();
-	printf("ISN: %d\n", initialSequenceNumber);
-	packetSYN.header.sequenceNumber = initialSequenceNumber;
-	packetSYN.header.acknowledgmentNumber = 0;
-	packetSYN.header.synchronizeSequence = 1;
-	packetSYN.header.payloadLength = 0;
-	char *serializedPacketSYN = packet_serialize(packetSYN);
-
-	char bufferRawServerPacketSYN[HEADER_SIZE];
-
-	uint32_t retries = 0;
-	Packet serverPacketSYN;
-	do
-	{
-		if (sendto(socket_client, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
-		{
-			close(socket_client);
-			perror("SYN failed");
-			exit(EXIT_FAILURE);
-		}
-		log_packet(packetSYN, clientConfig.logfilePath, Send);
-		printf("sent cient SYN\n");
-		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
-		{
-			printf("timeout or recv failed, retransmit?\n");
-			continue;
-		}
-		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
-		log_packet(serverPacketSYN, clientConfig.logfilePath, Receive);
-		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
-		{
-			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?\n");
-			continue;
-		}
-		if (serverPacketSYN.header.acknowledgmentNumber != (initialSequenceNumber + 1))
-		{
-			printf("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?\n");
-			continue;
-		}
-		printf("recv Server SYN\n");
-		break;
-	} while (++retries < MAX_RETRIES);
-	if (retries >= MAX_RETRIES)
-	{
-		perror("MAX_RETRIES, closed connection");
-		close(socket_client);
-		exit(EXIT_FAILURE);
-	}
-	Packet packetACK = make_packet();
-	packetACK.header.sequenceNumber = initialSequenceNumber + 1;
-	packetACK.header.acknowledgmentNumber = serverPacketSYN.header.sequenceNumber + 1;
-	packetACK.header.acknowledgmentValid = 1;
-	packetACK.header.payloadLength = 0;
-	char *serializedPacketACK = packet_serialize(packetACK);
-	if (sendto(socket_client, serializedPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
-	{
-		close(socket_client);
-		perror("ACK failed");
-		exit(EXIT_FAILURE);
-	}
-	log_packet(packetACK, clientConfig.logfilePath, Send);
+	};
 	printf("Handshake complete.\n");
-
 	close(socket_client);
 }
