@@ -1,5 +1,38 @@
 #include "../include/protocol.h"
-
+typedef struct ClientConfig
+{
+	const char *serverIp;
+	uint16_t port;
+	const char *logfilePath;
+	const char *filePath;
+} ClientConfig;
+ClientConfig parseClientArgs(int argc, char *argv[])
+{
+	ClientConfig clientConfig;
+	clientConfig.logfilePath = NULL;
+	clientConfig.filePath = NULL;
+	clientConfig.serverIp = NULL;
+	clientConfig.port = 0;
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-p") == 0 && i + 1 < argc)
+		{
+			clientConfig.port = atoi(argv[++i]);
+		}
+		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		{
+			clientConfig.logfilePath = argv[++i];
+		}
+		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		{
+			clientConfig.serverIp = argv[++i];
+		}
+		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		{
+			clientConfig.filePath = argv[++i];
+		}
+	}
+}
 /**
  * 1. Create a UDP socket with `socket(AF_INET, SOCK_DGRAM, 0)`.
 2. Set `SO_RCVTIMEO` to `{TIMEOUT_SEC, TIMEOUT_USEC}`.
@@ -10,12 +43,33 @@
 7. Send ACK (flags = `FLAG_ACK`, seq = client_isn + 1, ack = server_isn + 1).
 8. Print "Handshake complete."
  */
-int main()
+int main(int argc, char *argv[])
 {
+	ClientConfig clientConfig = parseClientArgs(argc, argv);
+	if (clientConfig.logfilePath == NULL)
+	{
+		printf("clientConfig.logfilePath == NULL");
+		exit(EXIT_FAILURE);
+	}
+	else if (clientConfig.port < 1024)
+	{
+		printf("clientConfig.port < 1024");
+		exit(EXIT_FAILURE);
+	}
+	else if (clientConfig.serverIp == NULL)
+	{
+		printf("clientConfig.serverIp == NULL");
+		exit(EXIT_FAILURE);
+	}
+	else if (clientConfig.filePath == NULL)
+	{
+		printf("clientConfig.filePath == NULL");
+		exit(EXIT_FAILURE);
+	}
+
 	struct sockaddr_in server_addr;
 	// struct sockaddr_in local_addr;
 	socklen_t server_addr_len = sizeof(server_addr);
-
 	int socket_client = socket(AF_INET, SOCK_DGRAM, 0);
 	if (socket_client < 0)
 	{
@@ -24,8 +78,8 @@ int main()
 	}
 	memset(&server_addr, 0, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(REMOTE_SERVER_PORT);
-	if (inet_pton(AF_INET, REMOTE_SERVER_IP, &server_addr.sin_addr) <= 0)
+	server_addr.sin_port = htons(clientConfig.port);
+	if (inet_pton(AF_INET, clientConfig.serverIp, &server_addr.sin_addr) <= 0)
 	{
 		perror("server dest ip set failed");
 		exit(EXIT_FAILURE);
@@ -42,7 +96,7 @@ int main()
 		perror("connection failed");
 		exit(EXIT_FAILURE);
 	}
-	printf("Success: Connected to server at %s:%d\n", REMOTE_SERVER_IP, REMOTE_SERVER_PORT);
+	printf("Success: Connected to server at %s:%d\n", clientConfig.serverIp, clientConfig.port);
 
 	Packet packetSYN = make_packet();
 	// ISN
@@ -67,6 +121,7 @@ int main()
 			perror("SYN failed");
 			exit(EXIT_FAILURE);
 		}
+		log_packet(packetSYN, clientConfig.logfilePath, Send);
 		printf("sent cient SYN\n");
 		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
 		{
@@ -74,6 +129,7 @@ int main()
 			continue;
 		}
 		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
+		log_packet(serverPacketSYN, clientConfig.logfilePath, Receive);
 		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
 		{
 			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?\n");
@@ -105,6 +161,7 @@ int main()
 		perror("ACK failed");
 		exit(EXIT_FAILURE);
 	}
+	log_packet(packetACK, clientConfig.logfilePath, Send);
 	printf("Handshake complete.\n");
 	close(socket_client);
 }

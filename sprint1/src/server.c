@@ -1,4 +1,27 @@
 #include "../include/protocol.h"
+
+typedef struct ServerConfig
+{
+	uint16_t port;
+	const char *logfilePath;
+} ServerConfig;
+ServerConfig parseServerArgs(int argc, char *argv[])
+{
+	ServerConfig serverConfig;
+	serverConfig.logfilePath = NULL;
+	serverConfig.port = 0;
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-p") == 0 && i + 1 < argc)
+		{
+			serverConfig.port = atoi(argv[++i]);
+		}
+		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		{
+			serverConfig.logfilePath = argv[++i];
+		}
+	}
+}
 /**
  * 1. Create a UDP socket, bind to port.
 2. Wait for SYN (blocking `recvfrom` — no timeout yet).
@@ -9,8 +32,21 @@
 7. If timeout, retransmit SYN|ACK.
 8. On valid ACK: print "Handshake complete", log the event.
  */
-int main()
+int main(int argc, char *argv[])
 {
+
+	ServerConfig serverConfig = parseServerArgs(argc, argv);
+	if (serverConfig.logfilePath == NULL)
+	{
+		printf("serverConfig.logfilePath == NULL");
+		exit(EXIT_FAILURE);
+	}
+	else if (serverConfig.port < 1024)
+	{
+		printf("serverConfig.port < 1024");
+		exit(EXIT_FAILURE);
+	}
+
 	int server_socket;
 	struct sockaddr_in server_addr;
 
@@ -31,7 +67,7 @@ int main()
 		perror("bind failed");
 		exit(EXIT_FAILURE);
 	};
-	printf("Server listening on port %d...\n", REMOTE_SERVER_PORT);
+	printf("Server listening on port %d...\n", serverConfig.port);
 	while (1)
 	{
 		// resets timeout to 0
@@ -48,7 +84,10 @@ int main()
 			perror("receive syc failed");
 			continue;
 		}
+
 		Packet clientPacketSYN = packet_deserialize(bufferClientRawPacketSYN);
+		log_packet(clientPacketSYN, serverConfig.logfilePath, Receive);
+
 		srand((unsigned)time(NULL) ^ getpid());
 		uint32_t initialSequenceNumber = rand();
 		if (!clientPacketSYN.header.synchronizeSequence)
@@ -73,6 +112,7 @@ int main()
 			{
 				perror("send SYN failed");
 			};
+			log_packet(packetSYN, serverConfig.logfilePath, Send);
 			struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
 			if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
 			{
@@ -85,7 +125,7 @@ int main()
 				continue;
 			}
 			clientPacketACK = packet_deserialize(bufferClientRawPacketACK);
-
+			log_packet(clientPacketACK, serverConfig.logfilePath, Receive);
 			if (!clientPacketACK.header.acknowledgmentValid || clientPacketACK.header.synchronizeSequence)
 			{
 				printf("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?\n");

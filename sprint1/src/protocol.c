@@ -106,6 +106,37 @@ void printPacket(Packet packet)
 	printf(")\n");
 }
 
+void log_packet(Packet packet, char *filePath, PacketType packetType)
+{
+	FILE *fptr = fopen(filePath, "a");
+	if (fptr == NULL)
+		return;
+	char *dateString = time_stamp();
+	char *packetTypeString = packetType == Send ? "SEND" : "RECV";
+	char flagsBuffer[32];
+	flagsBuffer[0] = '\0';
+	if (packet.header.synchronizeSequence)
+		strcat(flagsBuffer, "SYN ");
+	if (packet.header.acknowledgmentValid)
+		strcat(flagsBuffer, "ACK ");
+	if (packet.header.noMoreData)
+		strcat(flagsBuffer, "FIN ");
+	if (packet.header.payloadLength)
+		fprintf(fptr, "[%s] %s SEQ=%d ACK=%d %s LEN=%d\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, packet.header.payloadLength);
+	else
+		fprintf(fptr, "[%s] %s SEQ=%d ACK=%d %s\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, flagsBuffer);
+	fflush(fptr);
+	fclose(fptr);
+}
+char *time_stamp()
+{
+	time_t nowEpochTime = time(NULL);
+	struct tm *t = localtime(&nowEpochTime);
+	char dateString[20];
+	// Format: YYYY-MM-DD-HH-MM-SS
+	strftime(dateString, sizeof(dateString), "%Y-%m-%d-%H-%M-%S", t);
+	return dateString;
+}
 // int main()
 // {
 
