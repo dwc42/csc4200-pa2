@@ -36,14 +36,14 @@ int main(int argc, char *argv[])
 
 	struct sockaddr_in server_addr;
 	// struct sockaddr_in local_addr;
-
+	uint32_t client_ISN;
 	int socket_client = socket(AF_INET, SOCK_DGRAM, 0);
 	if (socket_client < 0)
 	{
 		perror("socket creation failed");
 		exit(EXIT_FAILURE);
 	}
-	if (!createConnection(socket_client, clientConfig, &server_addr))
+	if (!createConnection(socket_client, clientConfig, &server_addr, &client_ISN))
 	{
 		printf("Handshake failed.\n");
 		exit(EXIT_FAILURE);
