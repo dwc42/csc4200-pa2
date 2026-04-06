@@ -122,7 +122,7 @@ void log_packet(Packet packet, char *filePath, PacketType packetType)
 	if (packet.header.noMoreData)
 		strcat(flagsBuffer, "FIN ");
 	if (packet.header.payloadLength)
-		fprintf(fptr, "[%s] %s SEQ=%u ACK=%u %s LEN=%u\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, packet.header.payloadLength);
+		fprintf(fptr, "[%s] %s SEQ=%u ACK=%u %s LEN=%u\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, flagsBuffer, packet.header.payloadLength);
 	else
 		fprintf(fptr, "[%s] %s SEQ=%u ACK=%u %s\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, flagsBuffer);
 	fflush(fptr);
