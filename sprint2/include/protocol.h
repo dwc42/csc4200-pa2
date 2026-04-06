@@ -71,6 +71,7 @@ typedef struct PacketHeader
 #define REMOTE_SERVER_PORT 5000
 #define BACKLOG_SIZE 5
 #define MAX_RETRIES 5
+#define MAX_PAYLOAD
 typedef struct Packet
 {
 	PacketHeader header;
@@ -84,4 +85,28 @@ Packet packet_deserialize(char *serializedPacket);
 void printPacket(Packet packet);
 void log_packet(Packet packet, char *filePath, PacketType packetType);
 char *time_stamp();
+typedef struct ClientConfig
+{
+	char *serverIp;
+	uint16_t port;
+	char *logfilePath;
+	char *filePath;
+} ClientConfig;
+ClientConfig parseClientArgs(int argc, char *argv[]);
+bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr);
+typedef struct ServerConfig
+{
+	uint16_t port;
+	char *logfilePath;
+} ServerConfig;
+ServerConfig parseServerArgs(int argc, char *argv[]);
+typedef struct ConnectionData
+{
+	struct sockaddr_in *server_addr;
+	struct sockaddr_in *client_addr;
+	uint32_t *client_isn;
+	uint32_t *server_isn;
+} ConnectionData;
+typedef void OnConnectionCallback(int server_socket, ServerConfig serverConfig, ConnectionData connectionData);
+bool startListening(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, OnConnectionCallback callback);
 #endif // PROTOCOL_H_

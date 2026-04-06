@@ -139,6 +139,248 @@ char *time_stamp()
 	strftime(dateString, 20, "%Y-%m-%d-%H-%M-%S", t);
 	return dateString;
 }
+
+ClientConfig parseClientArgs(int argc, char *argv[])
+{
+	ClientConfig clientConfig;
+	clientConfig.logfilePath = NULL;
+	clientConfig.filePath = NULL;
+	clientConfig.serverIp = NULL;
+	clientConfig.port = 0;
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-p") == 0 && i + 1 < argc)
+		{
+			clientConfig.port = atoi(argv[++i]);
+		}
+		else if (strcmp(argv[i], "-l") == 0 && i + 1 < argc)
+		{
+			clientConfig.logfilePath = argv[++i];
+		}
+		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		{
+			clientConfig.serverIp = argv[++i];
+		}
+		else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
+		{
+			clientConfig.filePath = argv[++i];
+		}
+	}
+	return clientConfig;
+}
+
+bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr)
+{
+
+	memset(server_addr, 0, sizeof(struct sockaddr_in));
+	server_addr->sin_family = AF_INET;
+	server_addr->sin_port = htons(clientConfig.port);
+	socklen_t server_addr_len = sizeof(struct sockaddr_in);
+	if (inet_pton(AF_INET, clientConfig.serverIp, &server_addr->sin_addr) <= 0)
+	{
+		perror("server dest ip set failed");
+		return false;
+	}
+	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
+	if (setsockopt(socket_client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+	{
+		perror("setsockopt failed");
+		return false;
+	}
+
+	if (connect(socket_client, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in)) < 0)
+	{
+		perror("connection failed");
+		return false;
+	}
+	printf("Success: Connected to server at %s:%d\n", clientConfig.serverIp, clientConfig.port);
+
+	Packet packetSYN = make_packet();
+	// ISN
+	srand((unsigned)time(NULL) ^ getpid());
+	uint32_t initialSequenceNumber = rand();
+	printf("ISN: %d\n", initialSequenceNumber);
+	packetSYN.header.sequenceNumber = initialSequenceNumber;
+	packetSYN.header.acknowledgmentNumber = 0;
+	packetSYN.header.synchronizeSequence = 1;
+	packetSYN.header.payloadLength = 0;
+	char *serializedPacketSYN = packet_serialize(packetSYN);
+
+	char bufferRawServerPacketSYN[HEADER_SIZE];
+
+	uint32_t retries = 0;
+	Packet serverPacketSYN;
+	do
+	{
+		if (sendto(socket_client, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)server_addr, server_addr_len) < 0)
+		{
+			close(socket_client);
+			perror("SYN failed");
+			continue;
+		}
+		log_packet(packetSYN, clientConfig.logfilePath, Send);
+		printf("sent cient SYN\n");
+		if (recvfrom(socket_client, bufferRawServerPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)server_addr, &server_addr_len) < 0)
+		{
+			printf("timeout or recv failed, retransmit?\n");
+			continue;
+		}
+		serverPacketSYN = packet_deserialize(bufferRawServerPacketSYN);
+		log_packet(serverPacketSYN, clientConfig.logfilePath, Receive);
+		if (!serverPacketSYN.header.synchronizeSequence || !serverPacketSYN.header.acknowledgmentValid)
+		{
+			printf("synchronizeSequence and acknowledgmentValid flags both not 1, retransmit?\n");
+			continue;
+		}
+		if (serverPacketSYN.header.acknowledgmentNumber != (initialSequenceNumber + 1))
+		{
+			printf("acknowledgmentNumber != initialSequenceNumber + 1, retransmit?\n");
+			continue;
+		}
+		printf("recv Server SYN\n");
+		break;
+	} while (++retries < MAX_RETRIES);
+	if (retries >= MAX_RETRIES)
+	{
+		perror("MAX_RETRIES, closed connection");
+		close(socket_client);
+		return false;
+	}
+	Packet packetACK = make_packet();
+	packetACK.header.sequenceNumber = initialSequenceNumber + 1;
+	packetACK.header.acknowledgmentNumber = serverPacketSYN.header.sequenceNumber + 1;
+	packetACK.header.acknowledgmentValid = 1;
+	packetACK.header.payloadLength = 0;
+	char *serializedPacketACK = packet_serialize(packetACK);
+	if (sendto(socket_client, serializedPacketACK, HEADER_SIZE, 0, (struct sockaddr *)server_addr, server_addr_len) < 0)
+	{
+		close(socket_client);
+		perror("ACK failed");
+		return false;
+	}
+	log_packet(packetACK, clientConfig.logfilePath, Send);
+	return true;
+}
+ServerConfig parseServerArgs(int argc, char *argv[])
+{
+	ServerConfig serverConfig;
+	serverConfig.logfilePath = NULL;
+	serverConfig.port = 0;
+	for (int i = 1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-p") == 0 && i + 1 < argc)
+		{
+			serverConfig.port = atoi(argv[++i]);
+		}
+		else if (strcmp(argv[i], "-l") == 0 && i + 1 < argc)
+		{
+			serverConfig.logfilePath = argv[++i];
+		}
+	}
+	return serverConfig;
+}
+bool startListening(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, OnConnectionCallback callback)
+{
+	if (server_socket < 0)
+	{
+		perror("socket creation failed");
+		return false;
+	}
+	// configure server address
+	memset(server_addr, 0, sizeof(struct sockaddr_in));
+	server_addr->sin_family = AF_INET;
+	server_addr->sin_addr.s_addr = INADDR_ANY;
+	server_addr->sin_port = htons(REMOTE_SERVER_PORT);
+	if (bind(server_socket, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in)) < 0)
+	{
+		perror("bind failed");
+		return false;
+	};
+	printf("Server listening on port %d...\n", serverConfig.port);
+	while (1)
+	{
+		struct sockaddr_in client_addr;
+		// resets timeout to 0
+		struct timeval blocking_timeout = {0, 0};
+		if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &blocking_timeout, sizeof(blocking_timeout)) < 0)
+		{
+			perror("setsockopt failed");
+			continue;
+		}
+		socklen_t client_addr_len = sizeof(struct sockaddr_in);
+		char bufferClientRawPacketSYN[HEADER_SIZE];
+		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
+		{
+			perror("receive syc failed");
+			continue;
+		}
+
+		Packet clientPacketSYN = packet_deserialize(bufferClientRawPacketSYN);
+		log_packet(clientPacketSYN, serverConfig.logfilePath, Receive);
+
+		srand((unsigned)time(NULL) ^ getpid());
+		uint32_t initialSequenceNumber = rand();
+		printf("Client ISN: %u, Server ISN: %u\n", clientPacketSYN.header.sequenceNumber, initialSequenceNumber);
+		if (!clientPacketSYN.header.synchronizeSequence)
+		{
+
+			perror("packet.header.synchronizeSequence not 1");
+		}
+		Packet packetSYN = make_packet();
+		packetSYN.header.sequenceNumber = initialSequenceNumber;
+		packetSYN.header.acknowledgmentNumber = clientPacketSYN.header.sequenceNumber + 1;
+		packetSYN.header.synchronizeSequence = 1;
+		packetSYN.header.acknowledgmentValid = 1;
+		packetSYN.header.payloadLength = 0;
+		char *serializedPacketSYN = packet_serialize(packetSYN);
+
+		uint32_t retries = 0;
+		Packet clientPacketACK;
+		char bufferClientRawPacketACK[HEADER_SIZE];
+		do
+		{
+			if (sendto(server_socket, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
+			{
+				perror("send SYN failed");
+				continue;
+			};
+			log_packet(packetSYN, serverConfig.logfilePath, Send);
+			struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
+			if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+			{
+				perror("setsockopt failed");
+				continue;
+			}
+			if (recvfrom(server_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
+			{
+				perror("timeout or recv failed, retransmit?");
+				continue;
+			}
+			clientPacketACK = packet_deserialize(bufferClientRawPacketACK);
+			log_packet(clientPacketACK, serverConfig.logfilePath, Receive);
+			if (!clientPacketACK.header.acknowledgmentValid || clientPacketACK.header.synchronizeSequence)
+			{
+				printf("synchronizeSequence not 1 or acknowledgmentValid not 0 flags, retransmit?\n");
+				continue;
+			}
+			if (clientPacketACK.header.acknowledgmentNumber != (initialSequenceNumber + 1))
+			{
+				printf("acknowledgmentNumber != initialSequenceNumber+1, retransmit?\n");
+				continue;
+			}
+			printf("recv Client ACK\n");
+			break;
+		} while (++retries < MAX_RETRIES);
+		if (retries >= MAX_RETRIES)
+		{
+			perror("MAX_RETRIES, closed connection");
+			// exit(EXIT_FAILURE);
+			continue;
+		}
+		callback(server_socket, serverConfig, server_addr, &client_addr);
+	}
+	return true; // should never happen
+}
 // int main()
 // {
 
