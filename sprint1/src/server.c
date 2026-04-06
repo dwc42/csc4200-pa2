@@ -33,7 +33,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 		return false;
 	}
 	// configure server address
-	memset(server_addr, 0, sizeof(server_addr));
+	memset(server_addr, 0, sizeof(struct sockaddr_in));
 	server_addr->sin_family = AF_INET;
 	server_addr->sin_addr.s_addr = INADDR_ANY;
 	server_addr->sin_port = htons(REMOTE_SERVER_PORT);
@@ -128,6 +128,10 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 }
 void onConnectionCallback(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, struct sockaddr_in *client_addr)
 {
+	(void)server_socket;
+	(void)serverConfig;
+	(void)server_addr;
+	(void)client_addr;
 	printf("Handshake complete.\n");
 }
 /**
