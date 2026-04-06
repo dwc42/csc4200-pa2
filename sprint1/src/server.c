@@ -16,7 +16,7 @@ ServerConfig parseServerArgs(int argc, char *argv[])
 		{
 			serverConfig.port = atoi(argv[++i]);
 		}
-		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		else if (strcmp(argv[i], "-l") == 0 && i + 1 < argc)
 		{
 			serverConfig.logfilePath = argv[++i];
 		}

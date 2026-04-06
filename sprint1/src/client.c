@@ -19,7 +19,7 @@ ClientConfig parseClientArgs(int argc, char *argv[])
 		{
 			clientConfig.port = atoi(argv[++i]);
 		}
-		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		else if (strcmp(argv[i], "-l") == 0 && i + 1 < argc)
 		{
 			clientConfig.logfilePath = argv[++i];
 		}
@@ -27,7 +27,7 @@ ClientConfig parseClientArgs(int argc, char *argv[])
 		{
 			clientConfig.serverIp = argv[++i];
 		}
-		else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+		else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
 		{
 			clientConfig.filePath = argv[++i];
 		}
