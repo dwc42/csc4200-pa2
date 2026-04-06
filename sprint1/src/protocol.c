@@ -136,7 +136,7 @@ char *time_stamp()
 	char *dateString;
 	dateString = malloc(20);
 	// Format: YYYY-MM-DD-HH-MM-SS
-	strftime(dateString, sizeof(dateString), "%Y-%m-%d-%H-%M-%S", t);
+	strftime(dateString, 20, "%Y-%m-%d-%H-%M-%S", t);
 	return dateString;
 }
 // int main()
