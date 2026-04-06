@@ -3,7 +3,7 @@
 typedef struct ServerConfig
 {
 	uint16_t port;
-	const char *logfilePath;
+	char *logfilePath;
 } ServerConfig;
 ServerConfig parseServerArgs(int argc, char *argv[])
 {

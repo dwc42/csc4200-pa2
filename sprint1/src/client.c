@@ -1,10 +1,10 @@
 #include "../include/protocol.h"
 typedef struct ClientConfig
 {
-	const char *serverIp;
+	char *serverIp;
 	uint16_t port;
-	const char *logfilePath;
-	const char *filePath;
+	char *logfilePath;
+	char *filePath;
 } ClientConfig;
 ClientConfig parseClientArgs(int argc, char *argv[])
 {
