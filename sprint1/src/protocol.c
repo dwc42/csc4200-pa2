@@ -112,7 +112,7 @@ void log_packet(Packet packet, char *filePath, PacketType packetType)
 	if (fptr == NULL)
 		return;
 	char *dateString = time_stamp();
-	char packetTypeString[5] = packetType == Send ? "SEND" : "RECV";
+	const char *packetTypeString = packetType == Send ? "SEND" : "RECV";
 	char flagsBuffer[32];
 	flagsBuffer[0] = '\0';
 	if (packet.header.synchronizeSequence)
