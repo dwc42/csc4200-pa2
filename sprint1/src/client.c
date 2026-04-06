@@ -54,7 +54,7 @@ bool createConnection(int socket_client, ClientConfig clientConfig, struct socka
 		return false;
 	}
 
-	if (connect(socket_client, (struct sockaddr *)server_addr, sizeof(server_addr)) < 0)
+	if (connect(socket_client, (struct sockaddr *)server_addr, sizeof(struct sockaddr_in)) < 0)
 	{
 		perror("connection failed");
 		return false;
