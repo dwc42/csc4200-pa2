@@ -125,6 +125,7 @@ void log_packet(Packet packet, char *filePath, PacketType packetType)
 		fprintf(fptr, "[%s] %s SEQ=%u ACK=%u %s LEN=%u\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, flagsBuffer, packet.header.payloadLength);
 	else
 		fprintf(fptr, "[%s] %s SEQ=%u ACK=%u %s\n", dateString, packetTypeString, packet.header.sequenceNumber, packet.header.acknowledgmentNumber, flagsBuffer);
+	free(dateString);
 	fflush(fptr);
 	fclose(fptr);
 }
@@ -132,7 +133,8 @@ char *time_stamp()
 {
 	time_t nowEpochTime = time(NULL);
 	struct tm *t = localtime(&nowEpochTime);
-	char dateString[20];
+	char *dateString;
+	dateString = malloc(20);
 	// Format: YYYY-MM-DD-HH-MM-SS
 	strftime(dateString, sizeof(dateString), "%Y-%m-%d-%H-%M-%S", t);
 	return dateString;
