@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
 		srand((unsigned)time(NULL) ^ getpid());
 		uint32_t initialSequenceNumber = rand();
-		printf("Client ISN: %u, Server ISN: %u", clientPacketSYN.header.sequenceNumber, initialSequenceNumber);
+		printf("Client ISN: %u, Server ISN: %u\n", clientPacketSYN.header.sequenceNumber, initialSequenceNumber);
 		if (!clientPacketSYN.header.synchronizeSequence)
 		{
 

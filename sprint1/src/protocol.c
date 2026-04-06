@@ -68,7 +68,7 @@ char *packet_serialize(Packet packet)
 }
 Packet packet_deserialize(char *serializedPacket)
 {
-	printf("run");
+	// printf("run");
 	Packet packet = make_packet();
 	uint8_t i = 0;
 	uint32_t bufferInt;
@@ -85,7 +85,7 @@ Packet packet_deserialize(char *serializedPacket)
 	memcpy(&bufferInt, serializedPacket + sizeof(uint32_t) * i++, sizeof(uint32_t));
 	packet.header.payloadLength = ntohl(bufferInt);
 
-	printf("payloadLength: %d,\n", packet.header.payloadLength);
+	// printf("payloadLength: %d,\n", packet.header.payloadLength);
 	packet.payload = malloc(packet.header.payloadLength + 1);
 	memcpy(packet.payload, serializedPacket + HEADER_SIZE, packet.header.payloadLength);
 	packet.payload[packet.header.payloadLength] = '\0';
