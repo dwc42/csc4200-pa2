@@ -44,7 +44,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 	printf("Server listening on port %d...\n", serverConfig.port);
 	while (1)
 	{
-		struct sockaddr_in *client_addr;
+		struct sockaddr_in client_addr;
 		// resets timeout to 0
 		struct timeval blocking_timeout = {0, 0};
 		if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &blocking_timeout, sizeof(blocking_timeout)) < 0)
@@ -54,7 +54,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 		}
 		socklen_t client_addr_len = sizeof(struct sockaddr_in);
 		char bufferClientRawPacketSYN[HEADER_SIZE];
-		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)client_addr, &client_addr_len) < 0)
+		if (recvfrom(server_socket, bufferClientRawPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 		{
 			perror("receive syc failed");
 			continue;
@@ -84,7 +84,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 		char bufferClientRawPacketACK[HEADER_SIZE];
 		do
 		{
-			if (sendto(server_socket, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)client_addr, client_addr_len) < 0)
+			if (sendto(server_socket, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, client_addr_len) < 0)
 			{
 				perror("send SYN failed");
 				continue;
@@ -96,7 +96,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 				perror("setsockopt failed");
 				continue;
 			}
-			if (recvfrom(server_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, (struct sockaddr *)client_addr, &client_addr_len) < 0)
+			if (recvfrom(server_socket, bufferClientRawPacketACK, HEADER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) < 0)
 			{
 				perror("timeout or recv failed, retransmit?");
 				continue;
@@ -122,7 +122,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 			// exit(EXIT_FAILURE);
 			continue;
 		}
-		callback(server_socket, serverConfig, server_addr, client_addr);
+		callback(server_socket, serverConfig, server_addr, &client_addr);
 	}
 	return true; // should never happen
 }
