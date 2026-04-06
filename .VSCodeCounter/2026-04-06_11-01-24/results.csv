@@ -1,0 +1,7 @@
+"filename", "language", "C", "C++", "Makefile", "comment", "blank", "total"
+"c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\Makefile", "Makefile", 0, 0, 17, 0, 9, 26
+"c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\include\protocol.h", "C++", 0, 79, 0, 31, 3, 113
+"c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\src\client.c", "C", 117, 0, 0, 12, 9, 138
+"c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\src\protocol.c", "C", 330, 0, 0, 63, 18, 411
+"c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\src\server.c", "C", 30, 0, 0, 10, 4, 44
+"Total", "-", 477, 79, 17, 116, 43, 732

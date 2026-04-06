@@ -2,10 +2,67 @@
 
 void onConnectionCallback(int server_socket, ServerConfig serverConfig, ConnectionData connectionData)
 {
-	(void)server_socket;
-	(void)serverConfig;
-	(void)connectionData;
 	printf("Handshake complete.\n");
+
+	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
+	if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+	{
+		perror("setsockopt failed");
+		return;
+	}
+	uint32_t expected_seq = *connectionData.client_isn + 1;
+	uint32_t retries = 0;
+	socklen_t client_addr_len = sizeof(struct sockaddr_in);
+	char fileName[255];
+	while (1)
+	{
+		retries = 0;
+		do
+		{
+			char filePacketBufferRaw[MAX_PAYLOAD + HEADER_SIZE];
+			if (recvfrom(server_socket, filePacketBufferRaw, MAX_PAYLOAD + HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, &client_addr_len) < 0)
+			{
+				perror("recv packet failed, retransmit?");
+				continue;
+			}
+			Packet filePacket = packet_deserialize(filePacketBufferRaw);
+			log_packet(filePacket, serverConfig.logfilePath, Receive);
+			Packet acknowledgementPacket = make_packet();
+			bool retransmit = false;
+			if (expected_seq != filePacket.header.sequenceNumber)
+			{
+				printf("expected_seq != filePacket.header.sequenceNumber\n");
+				acknowledgementPacket.header.acknowledgmentNumber = expected_seq;
+				retransmit = true;
+
+				sprintf(fileName, "%s", filePacket.payload);
+				char *correctPayload = strchr(filePacket.payload, '\0');
+				FILE *filePtr = fopen(fileName, "a");
+				if (filePtr == NULL)
+				{
+					printf("file open failed\n");
+					return;
+				}
+				fputs(correctPayload, filePtr);
+				fflush(filePtr);
+				fclose(filePtr);
+			}
+			else
+			{
+				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + acknowledgementPacket.header.payloadLength;
+			}
+			acknowledgementPacket.header.sequenceNumber = *connectionData.server_isn;
+			char *acknowledgementPacketRaw = packet_serialize(acknowledgementPacket);
+			sendto(server_socket, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len);
+			if (retransmit)
+				continue;
+			break;
+		} while (++retries < MAX_RETRIES);
+		if (retries >= MAX_RETRIES)
+		{
+			break;
+		}
+	}
 }
 
 /**

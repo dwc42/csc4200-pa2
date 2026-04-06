@@ -112,7 +112,7 @@ void log_packet(Packet packet, char *filePath, PacketType packetType)
 	if (fptr == NULL)
 		return;
 	char *dateString = time_stamp();
-	char *packetTypeString = packetType == Send ? "SEND" : "RECV";
+	char packetTypeString[5] = packetType == Send ? "SEND" : "RECV";
 	char flagsBuffer[32];
 	flagsBuffer[0] = '\0';
 	if (packet.header.synchronizeSequence)
@@ -169,7 +169,7 @@ ClientConfig parseClientArgs(int argc, char *argv[])
 	return clientConfig;
 }
 
-bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr)
+bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr, uint32_t *client_ISN)
 {
 
 	memset(server_addr, 0, sizeof(struct sockaddr_in));
@@ -200,6 +200,7 @@ bool createConnection(int socket_client, ClientConfig clientConfig, struct socka
 	srand((unsigned)time(NULL) ^ getpid());
 	uint32_t initialSequenceNumber = rand();
 	printf("ISN: %d\n", initialSequenceNumber);
+	*client_ISN = initialSequenceNumber;
 	packetSYN.header.sequenceNumber = initialSequenceNumber;
 	packetSYN.header.acknowledgmentNumber = 0;
 	packetSYN.header.synchronizeSequence = 1;
@@ -214,9 +215,10 @@ bool createConnection(int socket_client, ClientConfig clientConfig, struct socka
 	{
 		if (sendto(socket_client, serializedPacketSYN, HEADER_SIZE, 0, (struct sockaddr *)server_addr, server_addr_len) < 0)
 		{
+			free(serializedPacketSYN);
 			close(socket_client);
 			perror("SYN failed");
-			continue;
+			return false;
 		}
 		log_packet(packetSYN, clientConfig.logfilePath, Send);
 		printf("sent cient SYN\n");
@@ -240,6 +242,7 @@ bool createConnection(int socket_client, ClientConfig clientConfig, struct socka
 		printf("recv Server SYN\n");
 		break;
 	} while (++retries < MAX_RETRIES);
+	free(serializedPacketSYN);
 	if (retries >= MAX_RETRIES)
 	{
 		perror("MAX_RETRIES, closed connection");
@@ -254,10 +257,13 @@ bool createConnection(int socket_client, ClientConfig clientConfig, struct socka
 	char *serializedPacketACK = packet_serialize(packetACK);
 	if (sendto(socket_client, serializedPacketACK, HEADER_SIZE, 0, (struct sockaddr *)server_addr, server_addr_len) < 0)
 	{
+		free(serverPacketSYN.payload);
+		free(serializedPacketACK);
 		close(socket_client);
 		perror("ACK failed");
 		return false;
 	}
+	free(serializedPacketACK);
 	log_packet(packetACK, clientConfig.logfilePath, Send);
 	return true;
 }
@@ -300,6 +306,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 	while (1)
 	{
 		struct sockaddr_in client_addr;
+		uint32_t clientISN;
 		// resets timeout to 0
 		struct timeval blocking_timeout = {0, 0};
 		if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &blocking_timeout, sizeof(blocking_timeout)) < 0)
@@ -320,15 +327,18 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 
 		srand((unsigned)time(NULL) ^ getpid());
 		uint32_t initialSequenceNumber = rand();
-		printf("Client ISN: %u, Server ISN: %u\n", clientPacketSYN.header.sequenceNumber, initialSequenceNumber);
+		clientISN = clientPacketSYN.header.sequenceNumber;
+		printf("Client ISN: %u, Server ISN: %u\n", clientISN, initialSequenceNumber);
 		if (!clientPacketSYN.header.synchronizeSequence)
 		{
-
 			perror("packet.header.synchronizeSequence not 1");
+			free(clientPacketSYN.payload);
+			continue;
 		}
+		free(clientPacketSYN.payload);
 		Packet packetSYN = make_packet();
 		packetSYN.header.sequenceNumber = initialSequenceNumber;
-		packetSYN.header.acknowledgmentNumber = clientPacketSYN.header.sequenceNumber + 1;
+		packetSYN.header.acknowledgmentNumber = clientISN + 1;
 		packetSYN.header.synchronizeSequence = 1;
 		packetSYN.header.acknowledgmentValid = 1;
 		packetSYN.header.payloadLength = 0;
@@ -371,13 +381,16 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 			printf("recv Client ACK\n");
 			break;
 		} while (++retries < MAX_RETRIES);
+		free(clientPacketACK.payload);
+		free(serializedPacketSYN);
 		if (retries >= MAX_RETRIES)
 		{
 			perror("MAX_RETRIES, closed connection");
 			// exit(EXIT_FAILURE);
 			continue;
 		}
-		callback(server_socket, serverConfig, server_addr, &client_addr);
+		ConnectionData connectionData = {server_addr, &client_addr, &clientISN, &initialSequenceNumber};
+		callback(server_socket, serverConfig, connectionData);
 	}
 	return true; // should never happen
 }

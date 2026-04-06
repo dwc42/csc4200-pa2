@@ -1,11 +1,10 @@
 #include "../include/protocol.h"
 
-void onConnectionCallback(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, struct sockaddr_in *client_addr)
+void onConnectionCallback(int server_socket, ServerConfig serverConfig, ConnectionData connectionData)
 {
 	(void)server_socket;
 	(void)serverConfig;
-	(void)server_addr;
-	(void)client_addr;
+	(void)connectionData;
 	printf("Handshake complete.\n");
 }
 
@@ -42,5 +41,4 @@ int main(int argc, char *argv[])
 		printf("failed to startListening\n");
 		exit(EXIT_FAILURE);
 	};
-	// 1. create local socket
 }

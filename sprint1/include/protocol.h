@@ -43,6 +43,7 @@
 #include <io.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -71,7 +72,7 @@ typedef struct PacketHeader
 #define REMOTE_SERVER_PORT 5000
 #define BACKLOG_SIZE 5
 #define MAX_RETRIES 5
-#define MAX_PAYLOAD
+#define MAX_PAYLOAD 1500 - HEADER_SIZE
 typedef struct Packet
 {
 	PacketHeader header;
@@ -93,13 +94,20 @@ typedef struct ClientConfig
 	char *filePath;
 } ClientConfig;
 ClientConfig parseClientArgs(int argc, char *argv[]);
-bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr);
+bool createConnection(int socket_client, ClientConfig clientConfig, struct sockaddr_in *server_addr, uint32_t *client_ISN);
 typedef struct ServerConfig
 {
 	uint16_t port;
 	char *logfilePath;
 } ServerConfig;
 ServerConfig parseServerArgs(int argc, char *argv[]);
-typedef void OnConnectionCallback(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, struct sockaddr_in *client_addr);
+typedef struct ConnectionData
+{
+	struct sockaddr_in *server_addr;
+	struct sockaddr_in *client_addr;
+	uint32_t *client_isn;
+	uint32_t *server_isn;
+} ConnectionData;
+typedef void OnConnectionCallback(int server_socket, ServerConfig serverConfig, ConnectionData connectionData);
 bool startListening(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, OnConnectionCallback callback);
 #endif // PROTOCOL_H_
