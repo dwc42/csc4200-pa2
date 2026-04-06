@@ -31,7 +31,7 @@
  */
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
-
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -48,7 +48,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #endif
-
+typedef enum PacketType
+{
+	Send = 0,
+	Receive = 1,
+} PacketType;
 typedef struct PacketHeader
 {
 	uint32_t sequenceNumber : 32;
@@ -78,4 +82,6 @@ char *packet_serialize(Packet packet);
 Packet packet_deserialize(char *serializedPacket);
 
 void printPacket(Packet packet);
+void log_packet(Packet packet, char *filePath, PacketType packetType);
+char *time_stamp();
 #endif // PROTOCOL_H_
