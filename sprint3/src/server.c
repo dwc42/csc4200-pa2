@@ -111,7 +111,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 			free(acknowledgementPacketRaw);
 			if (retransmit)
 				continue;
-			if (acknowledgementPacket.header.noMoreData)
+			if (filePacket.header.noMoreData)
 			{
 				shouldBreak = true;
 				break;
