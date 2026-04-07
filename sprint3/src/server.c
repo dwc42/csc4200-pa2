@@ -51,8 +51,8 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				finishedACKPacket.header.acknowledgmentNumber = filePacket.header.sequenceNumber + 1;
 
 				char *finishedACKPacketRaw = packet_serialize(finishedACKPacket);
-				sendto(server_socket, finishedACKPacketRaw, HEADER_SIZE, 0,
-					   (struct sockaddr *)connectionData.client_addr, client_addr_len);
+				sendto(server_socket, finishedACKPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len);
+				log_packet(finishedACKPacket, serverConfig.logfilePath, Send);
 				free(finishedACKPacketRaw);
 				free(filePacket.payload);
 				shouldBreak = true;
