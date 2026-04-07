@@ -81,7 +81,6 @@ int main(int argc, char *argv[])
 	char payloadBuffer[MAX_PAYLOAD];
 	memcpy(payloadBuffer, filePathToSend, filePathToSendLength);
 	int ch;
-	FILE *filePtrSave = filePtr;
 	uint32_t retries = 0;
 	uint32_t totalFileByteCount = 0;
 	uint32_t currentPayloadChunkSize = filePathToSendLength;
@@ -91,7 +90,7 @@ int main(int argc, char *argv[])
 		payloadBuffer[currentPayloadChunkSize] = (char)ch;
 		currentPayloadChunkSize++;
 		totalFileByteCount++;
-		if (fgetc(filePtr + 1) == EOF || currentPayloadChunkSize >= newMaxPayloadSize)
+		if (currentPayloadChunkSize >= newMaxPayloadSize)
 		{
 			Packet packet = make_packet();
 			packet.header.sequenceNumber = currentSequenceNumber;
