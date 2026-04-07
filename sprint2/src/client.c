@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 	filePathToSend = malloc(filePathToSendLength);
 	memcpy(filePathToSend, fileNameTag, fileNameTagLength);
 	memcpy(filePathToSend + fileNameTagLength, clientConfig.filePath, strlen(clientConfig.filePath));
-	filePathToSend[fileNameTagLength - 1] = '\0';
+	filePathToSend[fileNameTagLength] = '\0';
 	const uint32_t newMaxPayloadSize = MAX_PAYLOAD - filePathToSendLength;
 	char payloadBuffer[MAX_PAYLOAD];
 	memcpy(payloadBuffer, filePathToSend, filePathToSendLength);
