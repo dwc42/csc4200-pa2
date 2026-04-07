@@ -49,7 +49,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					return;
 				}
 				sprintf(fileName, "%s", filePacket.payload + fileNameTagLength);
-				printf("FILENAME: %s", fileName);
+				printf("FILENAME: %s\n", fileName);
 				char *correctPayload = strchr(filePacket.payload, '\0') + 1;
 				FILE *filePtr = fopen(fileName, "a");
 				if (filePtr == NULL)
