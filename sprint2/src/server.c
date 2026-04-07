@@ -54,7 +54,6 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				if (filePtr == NULL)
 				{
 					free(filePacket.payload);
-					free(correctPayload);
 					printf("file open failed\n");
 					return;
 				}
