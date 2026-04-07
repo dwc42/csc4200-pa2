@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	};
 	printf("Handshake complete.\n");
-	printf("test\n");
+	// printf("test\n");
 	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
 	if (setsockopt(socket_client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
 	{

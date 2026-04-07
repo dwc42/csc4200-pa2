@@ -153,6 +153,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 		printf("failed to receive file: Timed Out\n");
 		return;
 	}
+
 	// char finishedPacketRaw[HEADER_SIZE];
 	// retries = 0;
 	// do

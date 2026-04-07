@@ -396,6 +396,7 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 		}
 		ConnectionData connectionData = {server_addr, &client_addr, &clientISN, &initialSequenceNumber};
 		callback(server_socket, serverConfig, connectionData);
+		printf("Waiting for next client...\n")
 	}
 	return true; // should never happen
 }
