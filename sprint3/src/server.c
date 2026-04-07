@@ -37,6 +37,30 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				continue;
 			}
 			Packet filePacket = packet_deserialize(filePacketBufferRaw);
+			if (filePacket.header.noMoreData)
+			{
+				char clientAddressString[INET_ADDRSTRLEN];
+				if (inet_ntop(AF_INET, &connectionData.client_addr->sin_addr, clientAddressString, sizeof(clientAddressString)) == NULL)
+				{
+					perror("inet_ntop failed");
+					strcpy(clientAddressString, "unknown");
+				}
+				printf("Interaction with %s completed.\n", clientAddressString);
+				hash_file(fileName);
+				Packet finishedACKPacket = make_packet();
+				finishedACKPacket.header.acknowledgmentValid = 1;
+				finishedACKPacket.header.noMoreData = 1;
+				finishedACKPacket.header.sequenceNumber = *connectionData.server_isn;
+				finishedACKPacket.header.acknowledgmentNumber = filePacket.header.sequenceNumber + 1;
+
+				char *finishedACKPacketRaw = packet_serialize(finishedACKPacket);
+				sendto(server_socket, finishedACKPacketRaw, HEADER_SIZE, 0,
+					   (struct sockaddr *)connectionData.client_addr, client_addr_len);
+				free(finishedACKPacketRaw);
+				free(finishedACKPacket.payload);
+				shouldBreak = true;
+				break;
+			}
 			log_packet(filePacket, serverConfig.logfilePath, Receive);
 			Packet acknowledgementPacket = make_packet();
 			bool retransmit = false;
@@ -131,52 +155,30 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 		printf("failed to receive file: Timed Out\n");
 		return;
 	}
-	char finishedPacketRaw[HEADER_SIZE];
-	retries = 0;
-	do
-	{
-		if (recvfrom(server_socket, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, &client_addr_len) < 0)
-		{
-			// perror("recv packet failed, retransmit?");
-			continue;
-		}
-		finishedPacket = packet_deserialize(finishedPacketRaw);
-		if (!finishedPacket.header.noMoreData)
-		{
-			free(finishedPacket.payload);
-			printf("finishedPacket.header.noMoreData not 1\n");
-			continue;
-		}
-		free(finishedPacket.payload);
-		finishedACKPacket = make_packet();
-		finishedACKPacket.header.acknowledgmentValid = 1;
-		finishedACKPacket.header.noMoreData = 1;
-		finishedACKPacket.header.sequenceNumber = finishedPacket.header.sequenceNumber + 1;
-		finishedACKPacketRaw = packet_serialize(finishedACKPacket);
-		if (sendto(server_socket, finishedACKPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len) < 0)
-		{
-			free(finishedACKPacketRaw);
-			free(finishedACKPacket.payload);
-			perror("send finishedACKPacketRaw failed");
-			continue;
-		};
-		free(finishedACKPacketRaw);
-		free(finishedACKPacket.payload);
-		break;
-	} while (++retries < MAX_RETRIES);
-	if (retries >= MAX_RETRIES)
-	{
-		printf("failed to receive finished packet\n");
-		return;
-	}
-	char clientAddressString[INET_ADDRSTRLEN];
-	if (inet_ntop(AF_INET, &connectionData.client_addr->sin_addr, clientAddressString, sizeof(clientAddressString)) == NULL)
-	{
-		perror("inet_ntop failed");
-		strcpy(clientAddressString, "unknown");
-	}
-	printf("Interaction with %s completed.\n", clientAddressString);
-	hash_file(fileName);
+	// char finishedPacketRaw[HEADER_SIZE];
+	// retries = 0;
+	// do
+	// {
+	// 	if (recvfrom(server_socket, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, &client_addr_len) < 0)
+	// 	{
+	// 		// perror("recv packet failed, retransmit?");
+	// 		continue;
+	// 	}
+	// 	finishedPacket = packet_deserialize(finishedPacketRaw);
+	// 	if (!finishedPacket.header.noMoreData)
+	// 	{
+	// 		free(finishedPacket.payload);
+	// 		printf("finishedPacket.header.noMoreData not 1\n");
+	// 		continue;
+	// 	}
+	// 	free(finishedPacket.payload);
+
+	// } while (++retries < MAX_RETRIES);
+	// if (retries >= MAX_RETRIES)
+	// {
+	// 	printf("failed to receive finished packet\n");
+	// 	return;
+	// }
 }
 
 /**
