@@ -14,6 +14,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 	uint32_t retries = 0;
 	socklen_t client_addr_len = sizeof(struct sockaddr_in);
 	char fileName[255] = {'\0'};
+	bool wroteAnyData = false;
 	while (1)
 	{
 		retries = 0;
@@ -34,29 +35,45 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				printf("expected_seq != filePacket.header.sequenceNumber\n");
 				acknowledgementPacket.header.acknowledgmentNumber = expected_seq;
 				retransmit = true;
+				free(filePacket.payload);
 			}
 			else
 			{
-				char *fileflag = (fileName[0] == '\0') ? "wb" : "ab";
+				const char *fileflag = wroteAnyData ? "ab" : "wb";
 				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + filePacket.header.payloadLength;
 				expected_seq += filePacket.header.payloadLength;
 				const char *fileNameTag = "FILENAME:";
-				const uint32_t fileNameTagLength = strlen(fileNameTag);
-				char *fileNameTagStartPtr = strstr(filePacket.payload, fileNameTag);
-				if (fileNameTagStartPtr == NULL)
+				size_t fileNameTagLength = strlen(fileNameTag);
+				size_t payloadLength = filePacket.header.payloadLength;
+				if (payloadLength < fileNameTagLength + 1)
+				{
+					free(filePacket.payload);
+					printf("payload too short for FILENAME header\n");
+					return;
+				}
+				if (memcmp(filePacket.payload, fileNameTag, fileNameTagLength) != 0)
 				{
 					free(filePacket.payload);
 					printf("failed to find FILENAME:\n");
 					return;
 				}
-				size_t fileNameLength = filePacket.header.payloadLength - fileNameTagLength;
-				printf("FILENAME: %s\n", fileName);
-
+				char *nameStart = filePacket.payload + fileNameTagLength;
+				size_t remainingLength = payloadLength - fileNameTagLength;
+				char *nameEnd = memchr(nameStart, '\0', remainingLength);
+				if (nameEnd == NULL)
+				{
+					free(filePacket.payload);
+					printf("missing filename terminator\n");
+					return;
+				}
+				size_t fileNameLength = (size_t)(nameEnd - nameStart);
 				if (fileNameLength >= sizeof(fileName))
 					fileNameLength = sizeof(fileName) - 1;
+				memcpy(fileName, nameStart, fileNameLength);
+				fileName[fileNameLength] = '\0';
+				printf("FILENAME: %s\n", fileName);
 
-				char *correctPayload = memchr(filePacket.payload + fileNameTagLength, '\0', fileNameLength);
-				memcpy(fileName, filePacket.payload + fileNameTagLength, fileNameLength);
+				char *correctPayload = nameEnd + 1;
 				FILE *filePtr = fopen(fileName, fileflag);
 				if (filePtr == NULL)
 				{
@@ -64,15 +81,17 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					printf("file open failed\n");
 					return;
 				}
-				size_t correctPayloadLength = filePacket.header.payloadLength - (size_t)(correctPayload - filePacket.payload);
+				size_t correctPayloadLength = payloadLength - (size_t)(correctPayload - filePacket.payload);
 				if (fwrite(correctPayload, 1, correctPayloadLength, filePtr) != correctPayloadLength)
 				{
+					fclose(filePtr);
 					free(filePacket.payload);
 					printf("file write failed\n");
 					return;
 				}
 				fflush(filePtr);
 				fclose(filePtr);
+				wroteAnyData = true;
 				free(filePacket.payload);
 			}
 			acknowledgementPacket.header.sequenceNumber = *connectionData.server_isn;
