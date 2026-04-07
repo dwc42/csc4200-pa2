@@ -3,7 +3,12 @@
 void onConnectionCallback(int server_socket, ServerConfig serverConfig, ConnectionData connectionData)
 {
 	printf("Handshake complete.\n");
-
+	if (serverConfig.drop)
+	{
+		char bufferDrop[255];
+		sprintf(bufferDrop, "sudo iptables -A INPUT -p udp --dport %d -j DROP", serverConfig.port);
+		system(bufferDrop);
+	}
 	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
 	if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
 	{

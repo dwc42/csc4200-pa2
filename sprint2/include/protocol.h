@@ -100,6 +100,7 @@ typedef struct ServerConfig
 {
 	uint16_t port;
 	char *logfilePath;
+	bool drop;
 } ServerConfig;
 ServerConfig parseServerArgs(int argc, char *argv[]);
 typedef struct ConnectionData

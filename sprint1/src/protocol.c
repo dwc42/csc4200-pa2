@@ -272,6 +272,7 @@ ServerConfig parseServerArgs(int argc, char *argv[])
 	ServerConfig serverConfig;
 	serverConfig.logfilePath = NULL;
 	serverConfig.port = 0;
+	serverConfig.drop = false;
 	for (int i = 1; i < argc; i++)
 	{
 		if (strcmp(argv[i], "-p") == 0 && i + 1 < argc)
@@ -281,6 +282,10 @@ ServerConfig parseServerArgs(int argc, char *argv[])
 		else if (strcmp(argv[i], "-l") == 0 && i + 1 < argc)
 		{
 			serverConfig.logfilePath = argv[++i];
+		}
+		else if (strcmp(argv[i], "-d") == 0 && i + 1 < argc)
+		{
+			serverConfig.drop = (atoi(argv[++i]) == 1) ? true : false;
 		}
 	}
 	return serverConfig;
