@@ -202,13 +202,13 @@ int main(int argc, char *argv[])
 	Packet finishedACKPacket;
 	do
 	{
-		if (sendto(socket_client, socket_client, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
+		if (sendto(socket_client, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
 		{
 			printf("sendto finishedPacketRaw failed\n");
 			continue;
 		}
 		char finishedACKPacketRaw[HEADER_SIZE];
-		if (recvfrom(socket_client, socket_client, finishedACKPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
+		if (recvfrom(socket_client, finishedACKPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
 		{
 			printf("recvfrom finishedACKPacketRaw failed\n");
 			continue;
