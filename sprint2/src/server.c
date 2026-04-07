@@ -49,9 +49,14 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					printf("failed to find FILENAME:\n");
 					return;
 				}
-				sprintf(fileName, "%s", filePacket.payload + fileNameTagLength);
+				size_t fileNameLength = filePacket.payload - fileNameTagLength;
 				printf("FILENAME: %s\n", fileName);
-				char *correctPayload = strchr(filePacket.payload, '\0') + 1;
+
+				if (fileNameLength >= sizeof(fileName))
+					fileNameLength = sizeof(fileName) - 1;
+
+				char *correctPayload = memchr(filePacket.payload + fileNameTagLength, '\0', filePacket.payload - fileNameTagLength);
+				memcpy(fileName, filePacket.payload + fileNameTagLength, fileNameLength);
 				FILE *filePtr = fopen(fileName, fileflag);
 				if (filePtr == NULL)
 				{
