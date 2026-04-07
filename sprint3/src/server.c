@@ -113,7 +113,6 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				continue;
 			if (acknowledgementPacket.header.noMoreData)
 			{
-				printf("failed to receive file\n");
 				shouldBreak = true;
 				break;
 			}
@@ -126,6 +125,11 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 		}
 		if (shouldBreak)
 			break;
+	}
+	if (timedOut)
+	{
+		printf("failed to receive file: Timed Out\n");
+		return;
 	}
 	char finishedPacketRaw[HEADER_SIZE];
 	retries = 0;
