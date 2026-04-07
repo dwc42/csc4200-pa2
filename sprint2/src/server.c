@@ -37,6 +37,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 			}
 			else
 			{
+				char *fileflag = (fileName == '\0') ? "wb" : "ab";
 				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + filePacket.header.payloadLength;
 				expected_seq += filePacket.header.payloadLength;
 				const char *fileNameTag = "FILENAME:";
@@ -51,7 +52,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				sprintf(fileName, "%s", filePacket.payload + fileNameTagLength);
 				printf("FILENAME: %s\n", fileName);
 				char *correctPayload = strchr(filePacket.payload, '\0') + 1;
-				FILE *filePtr = fopen(fileName, "wb");
+				FILE *filePtr = fopen(fileName, fileflag);
 				if (filePtr == NULL)
 				{
 					free(filePacket.payload);

@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 		payloadBuffer[currentPayloadChunkSize] = (char)ch;
 		currentPayloadChunkSize++;
 		totalFileByteCount++;
-		if (currentPayloadChunkSize >= newMaxPayloadSize)
+		if (fgetc(filePtr + 1) == EOF || currentPayloadChunkSize >= newMaxPayloadSize)
 		{
 			Packet packet = make_packet();
 			packet.header.sequenceNumber = currentSequenceNumber;
