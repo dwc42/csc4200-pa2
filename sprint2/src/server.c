@@ -38,7 +38,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 			else
 			{
 				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + filePacket.header.payloadLength;
-				expected_seq += acknowledgementPacket.header.payloadLength;
+				expected_seq += filePacket.header.payloadLength;
 				const char *fileNameTag = "FILENAME:";
 				const uint32_t fileNameTagLength = strlen(fileNameTag);
 				char *fileNameTagStartPtr = strstr(filePacket.payload, fileNameTag);
@@ -59,7 +59,12 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					return;
 				}
 				size_t correctPayloadLength = filePacket.header.payloadLength - (size_t)(correctPayload - filePacket.payload);
-				fwrite(correctPayload, 1, correctPayloadLength, filePtr);
+				if (fwrite(correctPayload, 1, correctPayloadLength, filePtr) != correctPayloadLength)
+				{
+					free(filePacket.payload);
+					printf("file write failed\n");
+					return;
+				}
 				fflush(filePtr);
 				fclose(filePtr);
 				free(filePacket.payload);
