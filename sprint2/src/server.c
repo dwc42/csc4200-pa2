@@ -13,7 +13,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 	uint32_t expected_seq = *connectionData.client_isn + 1;
 	uint32_t retries = 0;
 	socklen_t client_addr_len = sizeof(struct sockaddr_in);
-	char fileName[255];
+	char fileName[255] = '\0';
 	while (1)
 	{
 		retries = 0;
@@ -37,7 +37,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 			}
 			else
 			{
-				char *fileflag = (fileName == '\0') ? "wb" : "ab";
+				char *fileflag = (fileName[0] == '\0') ? "wb" : "ab";
 				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + filePacket.header.payloadLength;
 				expected_seq += filePacket.header.payloadLength;
 				const char *fileNameTag = "FILENAME:";
