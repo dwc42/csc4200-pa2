@@ -34,26 +34,40 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				printf("expected_seq != filePacket.header.sequenceNumber\n");
 				acknowledgementPacket.header.acknowledgmentNumber = expected_seq;
 				retransmit = true;
-
-				sprintf(fileName, "%s", filePacket.payload);
-				char *correctPayload = strchr(filePacket.payload, '\0');
-				FILE *filePtr = fopen(fileName, "a");
-				if (filePtr == NULL)
-				{
-					printf("file open failed\n");
-					return;
-				}
-				fputs(correctPayload, filePtr);
-				fflush(filePtr);
-				fclose(filePtr);
 			}
 			else
 			{
-				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + acknowledgementPacket.header.payloadLength;
+				acknowledgementPacket.header.acknowledgmentNumber = expected_seq + filePacket.header.payloadLength;
+				expected_seq += acknowledgementPacket.header.payloadLength;
+				const char *fileNameTag = "FILENAME:";
+				const uint32_t fileNameTagLength = strlen(fileNameTag);
+				char *fileNameTagStartPtr = strstr(filePacket.payload, fileNameTag);
+				if (fileNameTagStartPtr == NULL)
+				{
+					free(filePacket.payload);
+					printf("failed to find FILENAME:\n");
+					return;
+				}
+				sprintf(fileName, "%s", filePacket.payload + fileNameTagLength);
+				char *correctPayload = strchr(filePacket.payload, '\0') + 1;
+				FILE *filePtr = fopen(fileName, "a");
+				if (filePtr == NULL)
+				{
+					free(filePacket.payload);
+					free(correctPayload);
+					printf("file open failed\n");
+					return;
+				}
+				size_t correctPayloadLength = filePacket.header.payloadLength - (size_t)(correctPayload - filePacket.payload);
+				fwrite(correctPayload, 1, correctPayloadLength, filePtr);
+				fflush(filePtr);
+				fclose(filePtr);
+				free(filePacket.payload);
 			}
 			acknowledgementPacket.header.sequenceNumber = *connectionData.server_isn;
 			char *acknowledgementPacketRaw = packet_serialize(acknowledgementPacket);
 			sendto(server_socket, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len);
+			free(acknowledgementPacketRaw);
 			if (retransmit)
 				continue;
 			break;
