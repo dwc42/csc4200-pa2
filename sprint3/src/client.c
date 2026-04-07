@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
 		close(socket_client);
 		exit(EXIT_FAILURE);
 	}
+	printf("file found at: %s", clientConfig.filePath);
 	hash_file(clientConfig.filePath);
 	char *filePathToSend;
 	const char *fileNameTag = "FILENAME:";
