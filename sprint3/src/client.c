@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	};
 	printf("Handshake complete.\n");
-
+	printf("test\n");
 	struct timeval timeout = {TIMEOUT_SEC, TIMEOUT_USEC};
 	if (setsockopt(socket_client, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
 	{
@@ -64,11 +64,11 @@ int main(int argc, char *argv[])
 
 	if (filePtr == NULL)
 	{
-		printf("file not found");
+		printf("file not found\n");
 		close(socket_client);
 		exit(EXIT_FAILURE);
 	}
-	printf("file found at: %s", clientConfig.filePath);
+	printf("file found at: %s\n", clientConfig.filePath);
 	hash_file(clientConfig.filePath);
 	char *filePathToSend;
 	const char *fileNameTag = "FILENAME:";
