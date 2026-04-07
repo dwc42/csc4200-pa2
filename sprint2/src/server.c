@@ -76,7 +76,8 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					fileNameLength = sizeof(fileName) - 1;
 				memcpy(fileName, fileNameStart, fileNameLength);
 				fileName[fileNameLength] = '\0';
-				printf("FILENAME: %s\n", fileName);
+				if (!wroteAnyData)
+					printf("FILENAME: %s\n", fileName);
 
 				char *correctPayload = fileNameEnd + 1;
 				FILE *filePtr = fopen(fileName, fileflag);
