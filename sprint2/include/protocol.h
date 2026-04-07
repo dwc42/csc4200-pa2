@@ -43,6 +43,7 @@
 #include <io.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
+#include <openssl/sha.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -110,4 +111,5 @@ typedef struct ConnectionData
 } ConnectionData;
 typedef void OnConnectionCallback(int server_socket, ServerConfig serverConfig, ConnectionData connectionData);
 bool startListening(int server_socket, ServerConfig serverConfig, struct sockaddr_in *server_addr, OnConnectionCallback callback);
+void hash_file(const char *path);
 #endif // PROTOCOL_H_

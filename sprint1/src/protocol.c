@@ -394,6 +394,33 @@ bool startListening(int server_socket, ServerConfig serverConfig, struct sockadd
 	}
 	return true; // should never happen
 }
+
+// googles ai wrote this
+void hash_file(const char *path)
+{
+	FILE *file = fopen(path, "rb");
+	if (!file)
+		return;
+
+	SHA256_CTX sha256;
+	SHA256_Init(&sha256);
+	unsigned char buffer[4096];
+	int bytesRead = 0;
+
+	while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) != 0)
+	{
+		SHA256_Update(&sha256, buffer, bytesRead);
+	}
+
+	unsigned char hash[SHA256_DIGEST_LENGTH];
+	SHA256_Final(hash, &sha256);
+
+	for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
+
+	fclose(file);
+}
 // int main()
 // {
 

@@ -60,12 +60,14 @@ int main(int argc, char *argv[])
 	}
 
 	socklen_t server_addr_len = sizeof(struct sockaddr_in);
-	FILE *filePtr = fopen(clientConfig.filePath, "r");
+	FILE *filePtr = fopen(clientConfig.filePath, "rb");
+
 	if (filePtr == NULL)
 	{
 		close(socket_client);
 		exit(EXIT_FAILURE);
 	}
+	hash_file(clientConfig.filePath);
 	char *filePathToSend;
 	const char *fileNameTag = "FILENAME:";
 	const uint32_t fileNameTagLength = strlen(fileNameTag);

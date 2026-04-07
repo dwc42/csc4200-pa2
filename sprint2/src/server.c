@@ -51,7 +51,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				sprintf(fileName, "%s", filePacket.payload + fileNameTagLength);
 				printf("FILENAME: %s\n", fileName);
 				char *correctPayload = strchr(filePacket.payload, '\0') + 1;
-				FILE *filePtr = fopen(fileName, "a");
+				FILE *filePtr = fopen(fileName, "wb");
 				if (filePtr == NULL)
 				{
 					free(filePacket.payload);
@@ -83,6 +83,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 		}
 	}
 	printf("Completed file mabye recv\n");
+	hash_file(fileName);
 }
 
 /**
