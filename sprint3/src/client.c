@@ -200,6 +200,7 @@ int main(int argc, char *argv[])
 	finishedPacket.header.noMoreData = 1;
 	char *finishedPacketRaw = packet_serialize(finishedPacket);
 	Packet finishedACKPacket;
+	retries = 0;
 	do
 	{
 		if (sendto(socket_client, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)

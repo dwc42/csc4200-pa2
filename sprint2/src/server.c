@@ -101,8 +101,14 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				free(filePacket.payload);
 			}
 			acknowledgementPacket.header.sequenceNumber = *connectionData.server_isn;
+			acknowledgementPacket.header.acknowledgmentValid = 1;
 			char *acknowledgementPacketRaw = packet_serialize(acknowledgementPacket);
-			sendto(server_socket, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len);
+			if (sendto(server_socket, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len) < 0)
+			{
+				free(acknowledgementPacketRaw);
+				printf("acknowledgementPacketRaw sendto failed\n");
+				continue;
+			}
 			free(acknowledgementPacketRaw);
 			if (retransmit)
 				continue;

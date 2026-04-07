@@ -15,9 +15,6 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 		perror("setsockopt failed");
 		return;
 	}
-	Packet finishedPacket;
-	Packet finishedACKPacket;
-	char *finishedACKPacketRaw;
 	uint32_t expected_seq = *connectionData.client_isn + 1;
 	uint32_t retries = 0;
 	socklen_t client_addr_len = sizeof(struct sockaddr_in);
@@ -57,7 +54,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				sendto(server_socket, finishedACKPacketRaw, HEADER_SIZE, 0,
 					   (struct sockaddr *)connectionData.client_addr, client_addr_len);
 				free(finishedACKPacketRaw);
-				free(finishedACKPacket.payload);
+				free(filePacket.payload);
 				shouldBreak = true;
 				break;
 			}
@@ -130,16 +127,17 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 				free(filePacket.payload);
 			}
 			acknowledgementPacket.header.sequenceNumber = *connectionData.server_isn;
+			acknowledgementPacket.header.acknowledgmentValid = 1;
 			char *acknowledgementPacketRaw = packet_serialize(acknowledgementPacket);
-			sendto(server_socket, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len);
+			if (sendto(server_socket, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, client_addr_len) < 0)
+			{
+				free(acknowledgementPacketRaw);
+				printf("acknowledgementPacketRaw sendto failed\n");
+				continue;
+			}
 			free(acknowledgementPacketRaw);
 			if (retransmit)
 				continue;
-			if (filePacket.header.noMoreData)
-			{
-				shouldBreak = true;
-				break;
-			}
 			break;
 		} while (++retries < MAX_RETRIES);
 		if (retries >= MAX_RETRIES)
