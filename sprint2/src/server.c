@@ -58,8 +58,8 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					return;
 				}
 				char *fileNameStart = filePacket.payload + fileNameTagLength;
-				size_t fileNameLength = payloadLength - fileNameTagLength;
-				char *fileNameEnd = memchr(fileNameStart, '\0', fileNameLength);
+				size_t remainderSize = payloadLength - fileNameTagLength;
+				char *fileNameEnd = memchr(fileNameStart, '\0', remainderSize);
 				if (fileNameEnd == NULL)
 				{
 					free(filePacket.payload);
