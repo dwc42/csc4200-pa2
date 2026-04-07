@@ -232,7 +232,6 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	printf("File Sent\nConnection closed cleanly.\n");
-	free(finishedPacket.payload);
 	free(finishedPacketRaw);
 	free(filePathToSend);
 	close(socket_client);

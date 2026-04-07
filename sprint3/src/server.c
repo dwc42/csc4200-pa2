@@ -23,9 +23,11 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 	socklen_t client_addr_len = sizeof(struct sockaddr_in);
 	char fileName[255] = {'\0'};
 	bool wroteAnyData = false;
+	bool timedOut = false;
 	while (1)
 	{
 		retries = 0;
+		bool shouldBreak = false;
 		do
 		{
 			char filePacketBufferRaw[MAX_PAYLOAD + HEADER_SIZE];
@@ -109,27 +111,39 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 			free(acknowledgementPacketRaw);
 			if (retransmit)
 				continue;
-			char finishedPacketRaw[HEADER_SIZE];
-			if (recvfrom(server_socket, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, &client_addr_len) < 0)
+			if (acknowledgementPacket.header.noMoreData)
 			{
-				// perror("recv packet failed, retransmit?");
-				continue;
+				printf("failed to receive file\n");
+				shouldBreak = true;
+				break;
 			}
-			finishedPacket = packet_deserialize(finishedPacketRaw);
-			if (!finishedPacket.header.noMoreData)
-			{
-				free(finishedPacket.payload);
-				printf("finishedPacket.header.noMoreData not 1\n");
-				continue;
-			}
-			free(finishedPacket.payload);
 			break;
 		} while (++retries < MAX_RETRIES);
 		if (retries >= MAX_RETRIES)
 		{
-			printf("failed to receive file\n");
+			timedOut = true;
 			break;
 		}
+		if (shouldBreak)
+			break;
+	}
+	char finishedPacketRaw[HEADER_SIZE];
+	retries = 0;
+	do
+	{
+		if (recvfrom(server_socket, finishedPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)connectionData.client_addr, &client_addr_len) < 0)
+		{
+			// perror("recv packet failed, retransmit?");
+			continue;
+		}
+		finishedPacket = packet_deserialize(finishedPacketRaw);
+		if (!finishedPacket.header.noMoreData)
+		{
+			free(finishedPacket.payload);
+			printf("finishedPacket.header.noMoreData not 1\n");
+			continue;
+		}
+		free(finishedPacket.payload);
 		finishedACKPacket = make_packet();
 		finishedACKPacket.header.acknowledgmentValid = 1;
 		finishedACKPacket.header.noMoreData = 1;
@@ -139,13 +153,25 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 		{
 			free(finishedACKPacketRaw);
 			free(finishedACKPacket.payload);
-			perror("send SYN failed");
-			break;
+			perror("send finishedACKPacketRaw failed");
+			continue;
 		};
 		free(finishedACKPacketRaw);
 		free(finishedACKPacket.payload);
+		break;
+	} while (++retries < MAX_RETRIES);
+	if (retries >= MAX_RETRIES)
+	{
+		printf("failed to receive finished packet\n");
+		return;
 	}
-
+	char clientAddressString[INET_ADDRSTRLEN];
+	if (inet_ntop(AF_INET, &connectionData.client_addr->sin_addr, clientAddressString, sizeof(clientAddressString)) == NULL)
+	{
+		perror("inet_ntop failed");
+		strcpy(clientAddressString, "unknown");
+	}
+	printf("Interaction with %s completed.\n", clientAddressString);
 	hash_file(fileName);
 }
 
