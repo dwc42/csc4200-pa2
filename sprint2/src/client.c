@@ -184,9 +184,10 @@ int main(int argc, char *argv[])
 		free(packet.payload);
 		if (retries >= MAX_RETRIES)
 		{
-			printf("failed to send file");
-			return;
+			printf("failed to send file\n");
+			exit(EXIT_FAILURE);
 		}
+		printf("File Sent\n");
 		// else
 		// {
 
