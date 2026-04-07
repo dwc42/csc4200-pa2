@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 
 	if (filePtr == NULL)
 	{
+		printf("file not found");
 		close(socket_client);
 		exit(EXIT_FAILURE);
 	}
