@@ -13,7 +13,7 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 	uint32_t expected_seq = *connectionData.client_isn + 1;
 	uint32_t retries = 0;
 	socklen_t client_addr_len = sizeof(struct sockaddr_in);
-	char fileName[255] = '\0';
+	char fileName[255] = {'\0'};
 	while (1)
 	{
 		retries = 0;
