@@ -57,23 +57,23 @@ void onConnectionCallback(int server_socket, ServerConfig serverConfig, Connecti
 					printf("failed to find FILENAME:\n");
 					return;
 				}
-				char *nameStart = filePacket.payload + fileNameTagLength;
-				size_t remainingLength = payloadLength - fileNameTagLength;
-				char *nameEnd = memchr(nameStart, '\0', remainingLength);
-				if (nameEnd == NULL)
+				char *fileNameStart = filePacket.payload + fileNameTagLength;
+				size_t fileNameLength = payloadLength - fileNameTagLength;
+				char *fileNameEnd = memchr(fileNameStart, '\0', fileNameLength);
+				if (fileNameEnd == NULL)
 				{
 					free(filePacket.payload);
 					printf("missing filename terminator\n");
 					return;
 				}
-				size_t fileNameLength = (size_t)(nameEnd - nameStart);
+				size_t fileNameLength = (size_t)(fileNameEnd - fileNameStart);
 				if (fileNameLength >= sizeof(fileName))
 					fileNameLength = sizeof(fileName) - 1;
-				memcpy(fileName, nameStart, fileNameLength);
+				memcpy(fileName, fileNameStart, fileNameLength);
 				fileName[fileNameLength] = '\0';
 				printf("FILENAME: %s\n", fileName);
 
-				char *correctPayload = nameEnd + 1;
+				char *correctPayload = fileNameEnd + 1;
 				FILE *filePtr = fopen(fileName, fileflag);
 				if (filePtr == NULL)
 				{

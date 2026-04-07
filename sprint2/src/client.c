@@ -142,6 +142,59 @@ int main(int argc, char *argv[])
 			retries = 0;
 		}
 	}
+	if (currentPayloadChunkSize > filePathToSendLength)
+	{
+		retries = 0;
+		Packet packet = make_packet();
+		packet.header.sequenceNumber = currentSequenceNumber;
+		packet.header.acknowledgmentNumber = client_ISN + currentPayloadChunkSize;
+		packet.header.payloadLength = currentPayloadChunkSize;
+		packet.payload = malloc(currentPayloadChunkSize + 1);
+		packet.payload[currentPayloadChunkSize] = '\0';
+		memcpy(packet.payload, payloadBuffer, currentPayloadChunkSize);
+		char *serializedPacket = packet_serialize(packet);
+		do
+		{
+			if (sendto(socket_client, serializedPacket, HEADER_SIZE + currentPayloadChunkSize, 0, (struct sockaddr *)&server_addr, server_addr_len) < 0)
+			{
+				close(socket_client);
+				perror("send packet failed");
+				exit(EXIT_FAILURE);
+			}
+			log_packet(packet, clientConfig.logfilePath, Send);
+			char acknowledgementPacketRaw[HEADER_SIZE];
+			if (recvfrom(socket_client, acknowledgementPacketRaw, HEADER_SIZE, 0, (struct sockaddr *)&server_addr, &server_addr_len) < 0)
+			{
+				perror("recvfrom packet failed or timed out");
+				continue;
+			}
+			Packet acknowledgementPacket = packet_deserialize(acknowledgementPacketRaw);
+			log_packet(acknowledgementPacket, clientConfig.logfilePath, Receive);
+			if (acknowledgementPacket.header.acknowledgmentNumber != currentSequenceNumber + currentPayloadChunkSize)
+			{
+				free(acknowledgementPacket.payload);
+				printf("acknowledgementPacket.header.acknowledgmentNumber != currentSequenceNumber + currentPayloadChunkSize\n");
+				continue;
+			}
+			free(acknowledgementPacket.payload);
+			break;
+
+		} while (++retries < MAX_RETRIES);
+		free(serializedPacket);
+		free(packet.payload);
+		if (retries >= MAX_RETRIES)
+		{
+			printf("failed to send file");
+			return;
+		}
+		// else
+		// {
+
+		// 	currentSequenceNumber += currentPayloadChunkSize;
+		// 	memcpy(payloadBuffer, filePathToSend, filePathToSendLength);
+		// 	currentPayloadChunkSize = filePathToSendLength;
+		// }
+	}
 	free(filePathToSend);
 	close(socket_client);
 }
