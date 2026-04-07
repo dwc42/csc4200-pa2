@@ -1,0 +1,44 @@
+Date : 2026-04-07 18:47:36
+Directory : c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint3
+Total : 10 files,  299 codes, 28 comments, 17 blanks, all 344 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| C        |          6 |        284 |         25 |         11 |        320 |
+| Makefile |          2 |         12 |          3 |          6 |         21 |
+| C++      |          2 |          3 |          0 |          0 |          3 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                            | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                               |         10 |        299 |         28 |         17 |        344 |
+| . (Files)                                                                       |          1 |         29 |          3 |         15 |         47 |
+| ..                                                                              |          5 |       -573 |       -116 |        -43 |       -732 |
+| ..\sprint2                                                                      |          5 |       -573 |       -116 |        -43 |       -732 |
+| ..\sprint2 (Files)                                                              |          1 |        -17 |          0 |         -9 |        -26 |
+| ..\sprint2\include                                                              |          1 |        -79 |        -31 |         -3 |       -113 |
+| ..\sprint2\src                                                                  |          3 |       -477 |        -85 |        -31 |       -593 |
+| include                                                                         |          1 |         82 |         31 |          3 |        116 |
+| src                                                                             |          3 |        761 |        110 |         42 |        913 |
++---------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                        | language | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\Makefile           | Makefile |        -17 |          0 |         -9 |        -26 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\include\protocol.h | C++      |        -79 |        -31 |         -3 |       -113 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\src\client.c       | C        |       -117 |        -12 |         -9 |       -138 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\src\protocol.c     | C        |       -330 |        -63 |        -18 |       -411 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint2\src\server.c       | C        |        -30 |        -10 |         -4 |        -44 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint3\Makefile           | Makefile |         29 |          3 |         15 |         47 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint3\include\protocol.h | C++      |         82 |         31 |          3 |        116 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint3\src\client.c       | C        |        220 |         13 |         11 |        244 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint3\src\protocol.c     | C        |        366 |         64 |         23 |        453 |
+| c:\Users\mrpat\OneDrive\Documents\Github\csc4200-pa2\sprint3\src\server.c       | C        |        175 |         33 |          8 |        216 |
+| Total                                                                           |          |        299 |         28 |         17 |        344 |
++---------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
