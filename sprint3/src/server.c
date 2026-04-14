@@ -199,11 +199,11 @@ int main(int argc, char *argv[])
 		printf("serverConfig.logfilePath == NULL");
 		exit(EXIT_FAILURE);
 	}
-	else if (serverConfig.port < 1024)
-	{
-		printf("serverConfig.port < 1024");
-		exit(EXIT_FAILURE);
-	}
+	// else if (serverConfig.port < 1024)
+	// {
+	// 	printf("serverConfig.port < 1024");
+	// 	exit(EXIT_FAILURE);
+	// }
 
 	int server_socket;
 	struct sockaddr_in server_addr;
