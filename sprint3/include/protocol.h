@@ -66,7 +66,7 @@ typedef struct PacketHeader
 	uint32_t payloadLength : 32;
 } PacketHeader;
 #define HEADER_SIZE 4 * sizeof(uint32_t)
-#define TIMEOUT_SEC 5L
+#define TIMEOUT_SEC 10L
 #define TIMEOUT_USEC 0L
 
 #define REMOTE_SERVER_IP "10.128.0.3"
