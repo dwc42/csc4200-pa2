@@ -18,11 +18,11 @@ int main(int argc, char *argv[])
 		printf("clientConfig.logfilePath == NULL");
 		exit(EXIT_FAILURE);
 	}
-	else if (clientConfig.port < 1024)
-	{
-		printf("clientConfig.port < 1024");
-		exit(EXIT_FAILURE);
-	}
+	// else if (clientConfig.port < 1024)
+	// {
+	// 	printf("clientConfig.port < 1024");
+	// 	exit(EXIT_FAILURE);
+	// }
 	else if (clientConfig.serverIp == NULL)
 	{
 		printf("clientConfig.serverIp == NULL");
